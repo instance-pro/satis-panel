@@ -110,8 +110,10 @@ for the Satis default.
 
 ## Routing
 
-nginx serves the build output with basic auth (`/`, `/packages.json`, `/p/`, `/p2/`,
-`/include/`, `/dist/`) straight from the output volume. Everything else goes to the
+nginx serves the build output (`/`, `/packages.json`, `/p/`, `/p2/`, `/include/`,
+`/dist/`) straight from the output volume. Access is granted with basic auth (Composer
+users) or, via `auth_request`, with a logged-in admin session, so the admin can browse
+the package index without a Composer user. Everything else goes to the
 Symfony app: `/login`, `/admin/...` (session login) and `/webhook/<secret>` (no auth
 besides the secret).
 

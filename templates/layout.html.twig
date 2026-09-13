@@ -20,7 +20,7 @@
             {% for item in nav %}
                 <a href="{{ path(item.route) }}" class="nav-link {{ current in item.match ? 'nav-link-active' }}">{{ item.label }}</a>
             {% endfor %}
-            <a href="/" class="nav-link text-fg-muted" target="_blank" rel="noopener" title="Public package index (asks for a Composer user)">Package index ↗</a>
+            <a href="/" class="nav-link text-fg-muted" target="_blank" rel="noopener" title="Public package index">Package index ↗</a>
         </nav>
         <div class="border-t border-line px-5 py-4 text-xs text-fg-muted">
             Signed in as <span class="text-fg">{{ app.user ? app.user.userIdentifier : '' }}</span>

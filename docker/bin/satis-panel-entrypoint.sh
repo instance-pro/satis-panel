@@ -69,7 +69,8 @@ case "$(echo "${SATIS_AUTH_DISABLED:-0}" | tr 'A-Z' 'a-z')" in
         echo 'auth_basic off;' > /etc/nginx/snippets/satis-auth.conf
         ;;
     *)
-        printf 'auth_basic "Satis";\nauth_basic_user_file %s;\n' "$SATIS_HTPASSWD_FILE" > /etc/nginx/snippets/satis-auth.conf
+        # Composer users (basic auth) or a logged-in admin session (auth_request) may pass.
+        printf 'satisfy any;\nauth_basic "Satis";\nauth_basic_user_file %s;\nauth_request /_auth/session;\n' "$SATIS_HTPASSWD_FILE" > /etc/nginx/snippets/satis-auth.conf
         ;;
 esac
 envsubst '${SATIS_OUTPUT_DIR}' < /etc/nginx/templates/site.conf.template > /etc/nginx/conf.d/satis-panel.conf
