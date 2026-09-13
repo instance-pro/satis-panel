@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Auth\ComposerAuthManager;
+use App\Form\ComposerAuthType;
 use App\Form\KnownHostType;
 use App\Form\SshGenerateType;
 use App\Form\SshImportType;
@@ -16,8 +18,10 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/admin/ssh')]
 final class SshController extends AbstractController
 {
-    public function __construct(private readonly SshKeyManager $ssh)
-    {
+    public function __construct(
+        private readonly SshKeyManager $ssh,
+        private readonly ComposerAuthManager $composerAuth,
+    ) {
     }
 
     #[Route('', name: 'app_ssh', methods: ['GET', 'POST'])]
@@ -55,6 +59,25 @@ final class SshController extends AbstractController
             }
         }
 
+        $composerAuthForm = $this->createForm(ComposerAuthType::class);
+        $composerAuthForm->handleRequest($request);
+        if ($composerAuthForm->isSubmitted() && $composerAuthForm->isValid()) {
+            /** @var array{type: string, host: string, username: ?string, secret: string} $data */
+            $data = $composerAuthForm->getData();
+            $fields = ComposerAuthManager::TYPES[$data['type']]['fields'] ?? ['token'];
+            $values = 1 === count($fields)
+                ? [$fields[0] => $data['secret']]
+                : [$fields[0] => (string) $data['username'], $fields[1] => $data['secret']];
+            try {
+                $this->composerAuth->set($data['type'], $data['host'], $values);
+                $this->addFlash('success', sprintf('Composer authentication for %s saved.', strtolower(trim($data['host']))));
+
+                return $this->redirectToRoute('app_ssh', ['_fragment' => 'composer-auth']);
+            } catch (\RuntimeException|\InvalidArgumentException $e) {
+                $this->addFlash('error', $e->getMessage());
+            }
+        }
+
         $knownHostForm->handleRequest($request);
         if ($knownHostForm->isSubmitted() && $knownHostForm->isValid()) {
             /** @var array{host: string, port: int} $data */
@@ -79,6 +102,10 @@ final class SshController extends AbstractController
             'generate_form' => $generateForm,
             'import_form' => $importForm,
             'known_host_form' => $knownHostForm,
+            'composer_auth' => $this->composerAuth->entries(),
+            'composer_auth_path' => $this->composerAuth->path(),
+            'composer_auth_env' => '' !== (string) getenv('COMPOSER_AUTH'),
+            'composer_auth_form' => $composerAuthForm,
         ]);
     }
 
@@ -92,6 +119,20 @@ final class SshController extends AbstractController
         $this->addFlash('success', 'SSH key deleted.');
 
         return $this->redirectToRoute('app_ssh');
+    }
+
+    #[Route('/composer-auth/delete', name: 'app_composer_auth_delete', methods: ['POST'])]
+    public function deleteComposerAuth(Request $request): Response
+    {
+        $type = (string) $request->request->get('type');
+        $host = (string) $request->request->get('host');
+        if (!$this->isCsrfTokenValid('delete-composer-auth-'.$type.'-'.$host, (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+        $this->composerAuth->remove($type, $host);
+        $this->addFlash('success', sprintf('Composer authentication for %s removed.', $host));
+
+        return $this->redirectToRoute('app_ssh', ['_fragment' => 'composer-auth']);
     }
 
     #[Route('/known-hosts/delete', name: 'app_ssh_known_host_delete', methods: ['POST'])]

@@ -7,6 +7,9 @@
 {% if config_error %}
     <div class="flash-error mb-6">{{ config_error }}</div>
 {% endif %}
+{% if config.homepage|default('') matches '#^https?://localhost#' %}
+    <div class="flash-warning mb-6">The repository homepage is still <span class="code">{{ config.homepage }}</span>. Set the public URL under <a class="underline" href="{{ path('app_configuration') }}">Configuration</a> before the first build, it ends up in the package metadata and dist links.</div>
+{% endif %}
 
 <div class="grid gap-6 md:grid-cols-2">
     <div class="card">
@@ -76,7 +79,7 @@
             <div class="flex justify-between gap-4"><dt class="text-fg-muted">SSH deploy key</dt><dd>{{ ssh_public_key ? '<span class="badge-green">present</span>' : '<span class="badge-slate">none</span>' }}</dd></div>
             <div class="flex justify-between gap-4"><dt class="text-fg-muted">Composer auth (HTTPS)</dt><dd>{{ composer_auth ? '<span class="badge-green">configured</span>' : '<span class="badge-slate">none</span>' }}</dd></div>
         </dl>
-        <div class="mt-4"><a href="{{ path('app_ssh') }}" class="btn-secondary btn-sm">SSH</a></div>
+        <div class="mt-4"><a href="{{ path('app_ssh') }}" class="btn-secondary btn-sm">Source access</a></div>
     </div>
 
     <div class="card md:col-span-2">

@@ -6,7 +6,7 @@ node_modules
 vendor
 var
 public/build
-docker-compose.yml
+docker-compose.yaml
 README.md
 .env
 .env.example

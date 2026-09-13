@@ -23,6 +23,18 @@ document.querySelectorAll("[data-copy]").forEach((button) => {
   });
 });
 
+// Composer auth form: the username field is only used by http-basic and bitbucket-oauth.
+document.querySelectorAll("[data-composer-auth-form]").forEach((form) => {
+  const type = form.querySelector("[data-auth-type]");
+  const username = form.querySelector("[data-auth-username]");
+  const update = () => {
+    if (!type || !username) return;
+    username.hidden = !["http-basic", "bitbucket-oauth"].includes(type.value);
+  };
+  type?.addEventListener("change", update);
+  update();
+});
+
 // Composer users: "Change password" prefills the form with the user name.
 document.querySelectorAll("[data-change-user]").forEach((button) => {
   button.addEventListener("click", () => {

@@ -34,11 +34,18 @@ fi
 
 # ---------------------------------------------------------------- satis.json
 if [ ! -f "$SATIS_CONFIG" ]; then
-    log "creating initial $SATIS_CONFIG"
+    # Homepage: explicit SATIS_HOMEPAGE, else the Coolify domain, else a placeholder
+    # (editable in the UI under Configuration).
+    HOMEPAGE=${SATIS_HOMEPAGE:-}
+    if [ -z "$HOMEPAGE" ] && [ -n "${SERVICE_URL_PANEL:-}" ]; then HOMEPAGE=$SERVICE_URL_PANEL; fi
+    if [ -z "$HOMEPAGE" ] && [ -n "${SERVICE_FQDN_PANEL:-}" ]; then HOMEPAGE="https://${SERVICE_FQDN_PANEL#*://}"; fi
+    if [ -z "$HOMEPAGE" ] && [ -n "${SERVICE_FQDN_PANEL_80:-}" ]; then HOMEPAGE="https://${SERVICE_FQDN_PANEL_80#*://}"; fi
+    HOMEPAGE=${HOMEPAGE:-http://localhost}
+    log "creating initial $SATIS_CONFIG (homepage $HOMEPAGE)"
     cat > "$SATIS_CONFIG" <<JSON
 {
     "name": "${SATIS_REPOSITORY_NAME:-satis-panel/repository}",
-    "homepage": "${SATIS_HOMEPAGE:-http://localhost}",
+    "homepage": "${HOMEPAGE%/}",
     "output-dir": "$SATIS_OUTPUT_DIR",
     "twig-template": "$APP/satis/index.html.twig",
     "repositories": [],
@@ -75,29 +82,6 @@ case "$(echo "${SATIS_AUTH_DISABLED:-0}" | tr 'A-Z' 'a-z')" in
 esac
 envsubst '${SATIS_OUTPUT_DIR}' < /etc/nginx/templates/site.conf.template > /etc/nginx/conf.d/satis-panel.conf
 rm -f /etc/nginx/sites-enabled/default
-
-# ---------------------------------------------------------------- SSH
-if [ -n "$SSH_PRIVATE_KEY" ] && [ ! -f "$SSH_DIR/id_satis_panel" ]; then
-    printf '%s\n' "$SSH_PRIVATE_KEY" > "$SSH_DIR/id_satis_panel"
-    chmod 600 "$SSH_DIR/id_satis_panel"
-    ssh-keygen -y -f "$SSH_DIR/id_satis_panel" > "$SSH_DIR/id_satis_panel.pub" 2>/dev/null || log "WARNING: SSH_PRIVATE_KEY is not a valid private key"
-    log "imported SSH key from SSH_PRIVATE_KEY"
-fi
-if [ -f "$SSH_DIR/id_satis_panel" ] && [ ! -f "$SSH_DIR/config" ]; then
-    printf 'Host *\n    IdentityFile %s/id_satis_panel\n    IdentitiesOnly yes\n' "$SSH_DIR" > "$SSH_DIR/config"
-fi
-if [ -n "$SSH_KEYSCAN_HOSTS" ]; then
-    for entry in $SSH_KEYSCAN_HOSTS; do
-        host=${entry%%:*}
-        port=${entry#*:}
-        [ "$port" = "$entry" ] && port=22
-        if ! grep -qs "$host" /etc/ssh/ssh_known_hosts; then
-            log "scanning SSH host key of $host:$port"
-            ssh-keyscan -p "$port" -H "$host" >> /etc/ssh/ssh_known_hosts 2>/dev/null \
-                || log "WARNING: ssh-keyscan failed for $host:$port"
-        fi
-    done
-fi
 
 # ---------------------------------------------------------------- composer auth
 if [ -f "$CONFIG_DIR/auth.json" ] && [ ! -e "$COMPOSER_HOME/auth.json" ]; then

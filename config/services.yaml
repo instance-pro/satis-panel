@@ -7,6 +7,7 @@ parameters:
     app.build_state_dir: '%kernel.project_dir%/var/satis'
     app.satis_bin: '%kernel.project_dir%/vendor/bin/satis'
     app.satis_schema: '%kernel.project_dir%/vendor/composer/satis/res/satis-schema.json'
+    app.composer_home_default: '%kernel.project_dir%/var/satis-panel/composer'
 
 services:
     _defaults:
@@ -20,6 +21,7 @@ services:
             string $satisBin: '%app.satis_bin%'
             string $htpasswdFile: '%app.htpasswd_file%'
             string $sshDir: '%app.ssh_dir%'
+            string $composerHome: '%env(default:app.composer_home_default:COMPOSER_HOME)%'
             string $buildStateDir: '%app.build_state_dir%'
             string $adminUser: '%env(ADMIN_USER)%'
             string $adminPassword: '%env(ADMIN_PASSWORD)%'
