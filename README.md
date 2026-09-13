@@ -93,6 +93,15 @@ composer config --global http-basic.satis.example.com <user> <password>
 The entrypoint pins `output-dir` in `satis.json` to `/data/output`, the
 directory nginx serves.
 
+## Package index page
+
+Satis renders `index.html` (the page Composer users see at `/`) from
+`satis/index.html.twig`, a self-contained template in the same style as the admin UI
+with filter, dark mode and a click-to-copy `composer require` snippet. The entrypoint
+sets `twig-template` in `satis.json` to that file when the key is missing. Point it at
+your own template, or at `/var/www/html/vendor/composer/satis/views/index.html.twig`
+for the Satis default.
+
 ## Routing
 
 nginx serves the build output with basic auth (`/`, `/packages.json`, `/p/`, `/p2/`,

@@ -1,0 +1,270 @@
+{# Satis index.html template rendered by "satis build" (config key "twig-template").
+   Self-contained: satis uses its own Twig instance, so styles and script are inline.
+   Available variables: name, url, description, keywords, packages, dependencies, fieldsToToggle, blockIndexing #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% if blockIndexing %}<meta name="robots" content="noindex, nofollow">{% endif %}
+    <meta name="description" content="{{ description|default('Private Composer repository')|striptags|escape('html_attr') }}">
+    <title>{{ name|default('Composer repository') }}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📦</text></svg>">
+    <script>
+        (function () {
+            try {
+                var theme = localStorage.getItem('theme');
+                var dark = theme === 'dark' || (theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                document.documentElement.classList.toggle('dark', dark);
+            } catch (e) {}
+        })();
+    </script>
+    <style>
+        :root {
+            --canvas: #ffffff; --canvas-subtle: #f6f8fa; --line: #d1d9e0; --fg: #1f2328; --fg-muted: #59636e;
+            --accent: #0969da; --accent-emphasis: #0969da; --success: #1a7f37; --success-subtle: #dafbe1;
+            --danger: #d1242f; --danger-subtle: #ffebe9; --attention: #9a6700; --attention-subtle: #fff8c5;
+            --neutral-muted: #afb8c133; --btn: #f6f8fa; --btn-hover: #eff2f5; --btn-border: #1f232826;
+            color-scheme: light;
+        }
+        .dark {
+            --canvas: #0d1117; --canvas-subtle: #151b23; --line: #3d444d; --fg: #f0f6fc; --fg-muted: #9198a1;
+            --accent: #4493f8; --accent-emphasis: #1f6feb; --success: #3fb950; --success-subtle: #2ea04326;
+            --danger: #f85149; --danger-subtle: #f851491a; --attention: #d29922; --attention-subtle: #bb800926;
+            --neutral-muted: #656c7633; --btn: #212830; --btn-hover: #262c36; --btn-border: #3d444d;
+            color-scheme: dark;
+        }
+        * { box-sizing: border-box; }
+        html { background: var(--canvas); color: var(--fg); }
+        body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"; }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        code, pre, .mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+        header { position: sticky; top: 0; z-index: 10; border-bottom: 1px solid var(--line); background: var(--canvas-subtle); }
+        .bar { max-width: 64rem; margin: 0 auto; padding: 0 1.5rem; height: 4rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+        .brand { display: flex; align-items: center; gap: .5rem; font-size: 1.125rem; font-weight: 600; color: var(--fg); }
+        .brand:hover { text-decoration: none; }
+        .bar-right { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; justify-content: flex-end; }
+        main { max-width: 64rem; margin: 0 auto; padding: 2rem 1.5rem; }
+        h1 { font-size: 1.5rem; font-weight: 600; margin: 0 0 .25rem; }
+        h2 { font-size: 1rem; font-weight: 600; margin: 0 0 .5rem; }
+        .muted { color: var(--fg-muted); }
+        .small { font-size: .75rem; }
+        .card { border: 1px solid var(--line); border-radius: .375rem; background: var(--canvas); padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+        .card.abandoned { border-color: var(--danger); }
+        .btn { display: inline-flex; align-items: center; gap: .375rem; border: 1px solid var(--btn-border); border-radius: .375rem; background: var(--btn); color: var(--fg); padding: .3rem .75rem; font-size: .75rem; font-weight: 500; cursor: pointer; }
+        .btn:hover { background: var(--btn-hover); text-decoration: none; }
+        .input { width: 100%; border: 1px solid var(--line); border-radius: .375rem; background: var(--canvas); color: var(--fg); padding: .5rem .75rem; font-size: .875rem; }
+        .input:focus { outline: none; border-color: var(--accent-emphasis); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-emphasis) 30%, transparent); }
+        .badge { display: inline-flex; align-items: center; border-radius: 9999px; padding: .1rem .625rem; font-size: .75rem; font-weight: 500; background: var(--neutral-muted); color: var(--fg-muted); }
+        .badge-green { background: var(--success-subtle); color: var(--success); }
+        .badge-red { background: var(--danger-subtle); color: var(--danger); }
+        .badge-amber { background: var(--attention-subtle); color: var(--attention); }
+        .pill { display: inline-block; margin: .125rem .25rem .125rem 0; border: 1px solid var(--line); border-radius: 9999px; padding: .1rem .625rem; font-size: .75rem; background: var(--canvas-subtle); color: var(--fg); cursor: pointer; }
+        .pill:hover { border-color: var(--accent-emphasis); color: var(--accent); text-decoration: none; }
+        pre.snippet { border: 1px solid var(--line); border-radius: .375rem; background: var(--canvas-subtle); padding: 1rem; font-size: .75rem; line-height: 1.6; overflow: auto; margin: .5rem 0; white-space: pre-wrap; word-break: break-all; }
+        .kv { display: grid; grid-template-columns: 8rem 1fr; gap: .375rem 1rem; margin: .75rem 0 0; font-size: .875rem; }
+        .kv dt { color: var(--fg-muted); margin: 0; }
+        .kv dd { margin: 0; overflow-wrap: anywhere; }
+        .pkg-name { font-size: 1rem; font-weight: 600; }
+        .pkg-name a { color: var(--fg); }
+        .toolbar { display: flex; gap: .75rem; align-items: center; margin: 1.5rem 0 1rem; }
+        .toolbar .count { white-space: nowrap; }
+        .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); border: 1px solid var(--line); border-radius: .375rem; background: var(--canvas-subtle); color: var(--fg); padding: .5rem 1rem; font-size: .8125rem; box-shadow: 0 4px 12px rgba(0,0,0,.15); opacity: 0; transition: opacity .2s; pointer-events: none; }
+        .toast.show { opacity: 1; }
+        .hidden { display: none !important; }
+        .step { display: flex; align-items: center; gap: .5rem; margin: .75rem 0 .375rem; font-weight: 500; }
+        .step-no { display: inline-flex; align-items: center; justify-content: center; width: 1.375rem; height: 1.375rem; border-radius: 9999px; background: var(--accent-emphasis); color: #fff; font-size: .75rem; font-weight: 600; }
+        .snippet-row { display: flex; gap: .5rem; align-items: stretch; }
+        .snippet-row pre { flex: 1; margin: 0; font-size: .875rem; }
+        .btn.copy { align-self: center; }
+        footer { max-width: 64rem; margin: 0 auto; padding: 1rem 1.5rem 2rem; text-align: center; }
+        @media (max-width: 640px) { .kv { grid-template-columns: 1fr; gap: .125rem; } .kv dt { margin-top: .5rem; } .bar { height: auto; padding: .75rem 1.5rem; flex-wrap: wrap; } }
+    </style>
+</head>
+<body>
+<header>
+    <div class="bar">
+        <a class="brand" href="{{ url }}"><span>📦</span> {{ name|default('Composer repository') }}</a>
+        <div class="bar-right">
+            <span class="badge" title="{{ 'now'|date('c') }}">updated {{ 'now'|date('Y-m-d H:i') }} UTC</span>
+            <button type="button" class="btn" data-theme-toggle title="Switch theme"><span data-theme-icon>☀️</span></button>
+            <a class="btn" href="/admin">Admin</a>
+        </div>
+    </div>
+</header>
+
+<main>
+    <h1>{{ name|default('Composer repository') }}</h1>
+    {% if description %}<p class="muted" style="margin-top:0">{{ description|raw }}</p>{% endif %}
+
+    {% set host = url|default('')|replace({'https://': '', 'http://': ''})|trim('/') %}
+    {% set repoKey = name|default('satis')|replace({'/': '-', ' ': '-'})|lower %}
+    <div class="card">
+        <h2>Use this repository</h2>
+        <p class="muted small" style="margin:0 0 1rem">Two commands in your project: register the repository, then store your credentials. Afterwards require the packages below like any package from Packagist.</p>
+
+        <div class="step"><span class="step-no">1</span> Add the repository to the <code>composer.json</code> of your project</div>
+        <div class="snippet-row">
+            <pre class="snippet" data-snippet>composer config repositories.{{ repoKey }} composer {{ url }}</pre>
+            <button type="button" class="btn copy" data-copy>Copy</button>
+        </div>
+
+        <div class="step"><span class="step-no">2</span> Store your credentials (once per machine, or per project without <code>--global</code>)</div>
+        <div class="snippet-row">
+            <pre class="snippet" data-snippet>composer config --global http-basic.{{ host }} &lt;user&gt; &lt;password&gt;</pre>
+            <button type="button" class="btn copy" data-copy>Copy</button>
+        </div>
+
+        <details class="muted small" style="margin-top:.75rem">
+            <summary style="cursor:pointer">Or add it to composer.json by hand</summary>
+            <pre class="snippet" style="margin-top:.5rem">{
+    "repositories": [
+        { "type": "composer", "url": "{{ url }}" }
+    ]
+}</pre>
+        </details>
+    </div>
+
+    <div class="toolbar">
+        <label for="filter" class="hidden">Filter packages</label>
+        <input id="filter" class="input" type="search" placeholder="Filter packages by name, description, keyword, type ..." autocomplete="off" autofocus>
+        <span class="muted small count"><span data-count>{{ packages|length }}</span> of {{ packages|length }} packages</span>
+    </div>
+
+    <div id="packages">
+    {% for pkgName, package in packages %}
+        {% set p = package.highest %}
+        <article class="card {% if package.abandoned %}abandoned{% endif %}" id="{{ p.name }}" data-package data-search="{{ (p.name ~ ' ' ~ (p.description|default('')) ~ ' ' ~ (p.type|default('')) ~ ' ' ~ (p.keywords|default([])|join(' ')) ~ ' ' ~ (p.license|default([])|join(' ')))|lower|escape('html_attr') }}">
+            <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;flex-wrap:wrap">
+                <div>
+                    <div class="pkg-name"><a href="#{{ p.name }}">{{ p.name }}</a></div>
+                    {% if p.description %}<div class="muted">{{ p.description }}</div>{% endif %}
+                </div>
+                <div>
+                    {% if p.type %}<span class="badge">{{ p.type }}</span>{% endif %}
+                    {% if p.license %}<span class="badge">{{ p.license|join(', ') }}</span>{% endif %}
+                    {% if package.abandoned %}<span class="badge badge-red">abandoned</span>{% endif %}
+                </div>
+            </div>
+            {% if package.abandoned %}
+                <p class="small" style="color:var(--danger);margin:.5rem 0 0">This package is abandoned. {% if package.replacement %}Use <code>{{ package.replacement }}</code> instead.{% else %}No replacement was suggested.{% endif %}</p>
+            {% endif %}
+            <dl class="kv">
+                <dt>Releases</dt>
+                <dd>
+                    {% for version in package.versions %}
+                        {% set branchAlias = attribute(version.extra['branch-alias']|default({}), version.prettyVersion)|default('') %}
+                        {% set title = (version.distType ? 'dist-reference: ' ~ version.distReference : 'source-reference: ' ~ version.sourceReference) ~ (branchAlias ? ', branch-alias: ' ~ branchAlias : '') %}
+                        {% if version.distType and version.distUrl %}
+                            <a class="pill" href="{{ version.distUrl }}" title="{{ title }}" data-version="{{ version.prettyVersion }}" data-name="{{ p.name }}">{{ version.prettyVersion }}</a>
+                        {% else %}
+                            <span class="pill" title="{{ title }}" data-version="{{ version.prettyVersion }}" data-name="{{ p.name }}">{{ version.prettyVersion }}</span>
+                        {% endif %}
+                    {% endfor %}
+                    <div class="muted small" style="margin-top:.25rem">Click a version to copy the <code>composer require</code> command.</div>
+                </dd>
+                {% if p.keywords %}
+                    <dt>Keywords</dt>
+                    <dd>{% for keyword in p.keywords|sort %}<span class="badge" style="margin:.125rem .25rem .125rem 0">{{ keyword }}</span>{% endfor %}</dd>
+                {% endif %}
+                {% if p.homepage %}
+                    <dt>Homepage</dt>
+                    <dd><a href="{{ p.homepage }}">{{ p.homepage }}</a></dd>
+                {% endif %}
+                {% if p.authors %}
+                    <dt>Authors</dt>
+                    <dd>{% for author in p.authors %}{% if author.homepage %}<a href="{{ author.homepage }}">{{ author.name }}</a>{% else %}{{ author.name }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}</dd>
+                {% endif %}
+                {% if p.support %}
+                    <dt>Support</dt>
+                    <dd>{% for type, supportUrl in p.support %}<div>{{ type|capitalize }}: <a href="{{ supportUrl }}">{{ supportUrl }}</a></div>{% endfor %}</dd>
+                {% endif %}
+                {% set requiredBy = attribute(dependencies, pkgName)|default([]) %}
+                {% if requiredBy|length %}
+                    <dt>Required by</dt>
+                    <dd>{% for dependency in requiredBy %}<div><a href="#{{ dependency }}">{{ dependency }}</a></div>{% endfor %}</dd>
+                {% endif %}
+            </dl>
+        </article>
+    {% else %}
+        <div class="card muted">No packages have been built yet.</div>
+    {% endfor %}
+    </div>
+    <div id="no-match" class="card muted hidden">No package matches the filter.</div>
+</main>
+
+<footer class="muted small">Powered by <a href="https://github.com/composer/satis">Satis</a> · made with <a href="https://github.com/instance-pro/satis-panel">Satis Panel</a></footer>
+<div class="toast" data-toast>Copied</div>
+
+<script>
+    (function () {
+        // Filter
+        var input = document.getElementById('filter');
+        var cards = Array.prototype.slice.call(document.querySelectorAll('[data-package]'));
+        var count = document.querySelector('[data-count]');
+        var noMatch = document.getElementById('no-match');
+        function filter() {
+            var q = input.value.trim().toLowerCase();
+            var visible = 0;
+            cards.forEach(function (card) {
+                var hit = q === '' || card.getAttribute('data-search').indexOf(q) !== -1;
+                card.classList.toggle('hidden', !hit);
+                if (hit) visible++;
+            });
+            count.textContent = visible;
+            noMatch.classList.toggle('hidden', visible > 0 || cards.length === 0);
+        }
+        input.addEventListener('input', filter);
+
+        // Copy "composer require" on version click
+        var toast = document.querySelector('[data-toast]');
+        function showToast(text) {
+            toast.textContent = text;
+            toast.classList.add('show');
+            clearTimeout(toast._t);
+            toast._t = setTimeout(function () { toast.classList.remove('show'); }, 1800);
+        }
+        document.querySelectorAll('[data-version]').forEach(function (el) {
+            el.addEventListener('click', function (event) {
+                var version = el.getAttribute('data-version');
+                var constraint = /^v?\d+\.\d+/.test(version) ? '^' + version.replace(/^v/, '').split('.').slice(0, 2).join('.') : version;
+                var command = 'composer require ' + el.getAttribute('data-name') + ':"' + constraint + '"';
+                if (navigator.clipboard) {
+                    event.preventDefault();
+                    navigator.clipboard.writeText(command).then(function () { showToast('Copied: ' + command); });
+                }
+            });
+        });
+
+        // Copy buttons next to snippets
+        document.querySelectorAll('[data-copy]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var pre = button.parentElement.querySelector('[data-snippet]');
+                if (!pre || !navigator.clipboard) return;
+                navigator.clipboard.writeText(pre.textContent).then(function () { showToast('Copied'); });
+            });
+        });
+
+        // Theme toggle, same localStorage key as the admin UI
+        var order = ['system', 'light', 'dark'];
+        var icons = { system: '🖥️', light: '☀️', dark: '🌙' };
+        var media = window.matchMedia('(prefers-color-scheme: dark)');
+        function current() { try { var t = localStorage.getItem('theme'); return order.indexOf(t) !== -1 ? t : 'system'; } catch (e) { return 'system'; } }
+        function apply(theme) {
+            document.documentElement.classList.toggle('dark', theme === 'dark' || (theme === 'system' && media.matches));
+            document.querySelectorAll('[data-theme-icon]').forEach(function (el) { el.textContent = icons[theme]; });
+        }
+        document.querySelectorAll('[data-theme-toggle]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var next = order[(order.indexOf(current()) + 1) % order.length];
+                try { localStorage.setItem('theme', next); } catch (e) {}
+                apply(next);
+            });
+        });
+        media.addEventListener('change', function () { if (current() === 'system') apply('system'); });
+        apply(current());
+    })();
+</script>
+</body>
+</html>

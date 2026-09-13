@@ -13,6 +13,7 @@
         <h2 class="mb-3 text-base font-semibold">Repository</h2>
         <dl class="space-y-2 text-sm">
             <div class="flex justify-between gap-4"><dt class="text-fg-muted">Name</dt><dd>{{ config.name|default('–') }}</dd></div>
+            <div class="flex justify-between gap-4"><dt class="text-fg-muted">Description</dt><dd class="text-right">{{ config.description|default('–') }}</dd></div>
             <div class="flex justify-between gap-4"><dt class="text-fg-muted">Homepage</dt><dd class="truncate">{{ config.homepage|default('–') }}</dd></div>
             <div class="flex justify-between gap-4"><dt class="text-fg-muted">Repositories</dt><dd>{{ repository_count }}</dd></div>
             <div class="flex justify-between gap-4"><dt class="text-fg-muted">Archives (dist)</dt><dd>{{ archive_enabled ? 'enabled' : 'disabled' }}</dd></div>
@@ -43,13 +44,27 @@
         {% else %}
             <p class="mb-3 text-sm text-fg-muted">{{ users|length }} user{{ users|length > 1 ? 's' }}: {{ users|join(', ') }}</p>
         {% endif %}
-        <p class="mb-2 text-xs text-fg-muted">Add to the composer.json of your projects:</p>
-        <pre class="pre">{
+        {% set repo_url = config.homepage|default(base_url) %}
+        {% set repo_host = repo_url|replace({'https://': '', 'http://': ''})|trim('/') %}
+        {% set repo_key = config.name|default('satis')|replace({'/': '-', ' ': '-'})|lower %}
+        <p class="mb-1 text-sm font-medium"><span class="mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent-emphasis text-xs font-semibold text-white">1</span> Add the repository in your project</p>
+        <div class="mb-3 flex items-center gap-2">
+            <pre class="pre flex-1" data-snippet>composer config repositories.{{ repo_key }} composer {{ repo_url }}</pre>
+            <button type="button" class="btn-secondary btn-sm" data-copy>Copy</button>
+        </div>
+        <p class="mb-1 text-sm font-medium"><span class="mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent-emphasis text-xs font-semibold text-white">2</span> Store the credentials of a Composer user</p>
+        <div class="mb-3 flex items-center gap-2">
+            <pre class="pre flex-1" data-snippet>composer config --global http-basic.{{ repo_host }} &lt;user&gt; &lt;password&gt;</pre>
+            <button type="button" class="btn-secondary btn-sm" data-copy>Copy</button>
+        </div>
+        <details class="text-xs text-fg-muted">
+            <summary class="cursor-pointer">Or add it to composer.json by hand</summary>
+            <pre class="pre mt-2">{
     "repositories": [
-        { "type": "composer", "url": "{{ config.homepage|default(base_url) }}" }
+        { "type": "composer", "url": "{{ repo_url }}" }
     ]
 }</pre>
-        <p class="mt-2 text-xs text-fg-muted">Credentials: <span class="code">composer config --global http-basic.{{ (config.homepage|default(base_url))|replace({'https://': '', 'http://': ''}) }} &lt;user&gt; &lt;password&gt;</span></p>
+        </details>
         <div class="mt-4"><a href="{{ path('app_users') }}" class="btn-secondary btn-sm">Composer users</a></div>
     </div>
 

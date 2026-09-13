@@ -10,6 +10,18 @@ document.addEventListener("submit", (event) => {
   }
 });
 
+// Copy buttons next to snippets: <pre data-snippet>...</pre><button data-copy>
+document.querySelectorAll("[data-copy]").forEach((button) => {
+  button.addEventListener("click", async () => {
+    const pre = button.parentElement?.querySelector("[data-snippet]");
+    if (!pre || !navigator.clipboard) return;
+    await navigator.clipboard.writeText(pre.textContent);
+    const label = button.textContent;
+    button.textContent = "Copied";
+    setTimeout(() => (button.textContent = label), 1500);
+  });
+});
+
 // Repository form: fill the webhook secret with a random value.
 document.querySelectorAll("[data-generate-secret]").forEach((button) => {
   button.addEventListener("click", () => {

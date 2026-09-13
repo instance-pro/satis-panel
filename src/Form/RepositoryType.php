@@ -28,7 +28,7 @@ final class RepositoryType extends AbstractType
             ->add('name', TextType::class, [
                 'required' => false,
                 'label' => 'Name (optional)',
-                'help' => 'Only needed for repositories that do not provide a composer.json name.',
+                'help' => 'Identifier of this repository for Composer and Satis (used in messages and for composer config repositories.<name>). Has no effect on the package names, which come from composer.json.',
             ])
             ->add('noApi', CheckboxType::class, [
                 'required' => false,

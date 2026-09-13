@@ -40,6 +40,7 @@ if [ ! -f "$SATIS_CONFIG" ]; then
     "name": "${SATIS_REPOSITORY_NAME:-satis-panel/repository}",
     "homepage": "${SATIS_HOMEPAGE:-http://localhost}",
     "output-dir": "$SATIS_OUTPUT_DIR",
+    "twig-template": "$APP/satis/index.html.twig",
     "repositories": [],
     "require-all": true
 }
@@ -47,15 +48,17 @@ JSON
 fi
 
 # nginx serves SATIS_OUTPUT_DIR, so satis must always build into it.
+# The index.html template is ours unless satis.json says otherwise (set "twig-template"
+# to another file, e.g. vendor/composer/satis/views/index.html.twig for the satis default).
 php -r '
-    [$_, $file, $dir] = $argv;
+    [$_, $file, $dir, $template] = $argv;
     $data = json_decode((string) file_get_contents($file), true);
     if (!is_array($data)) { fwrite(STDERR, "satis-panel-entrypoint: WARNING: $file is not valid JSON\n"); exit(0); }
-    if (($data["output-dir"] ?? null) === $dir) { exit(0); }
-    $data["output-dir"] = $dir;
-    file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
-    echo "satis-panel-entrypoint: set output-dir in $file to $dir\n";
-' "$SATIS_CONFIG" "$SATIS_OUTPUT_DIR"
+    $changed = false;
+    if (($data["output-dir"] ?? null) !== $dir) { $data["output-dir"] = $dir; $changed = true; echo "satis-panel-entrypoint: set output-dir in $file to $dir\n"; }
+    if (!array_key_exists("twig-template", $data)) { $data["twig-template"] = $template; $changed = true; echo "satis-panel-entrypoint: set twig-template in $file to $template\n"; }
+    if ($changed) { file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n"); }
+' "$SATIS_CONFIG" "$SATIS_OUTPUT_DIR" "$APP/satis/index.html.twig"
 
 # ---------------------------------------------------------------- htpasswd / nginx
 touch "$SATIS_HTPASSWD_FILE"
