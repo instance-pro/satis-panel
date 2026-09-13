@@ -1,0 +1,22 @@
+{% extends 'layout.html.twig' %}
+
+{% block title %}Edit repository · {{ app_name }}{% endblock %}
+{% block heading %}Edit repository{% endblock %}
+{% block actions %}<a href="{{ path('app_repositories') }}" class="btn-secondary btn-sm">Back</a>{% endblock %}
+
+{% block content %}
+<div class="card max-w-2xl">
+    {{ form_start(form) }}
+        {{ form_widget(form) }}
+        <div class="flex gap-2">
+            <button type="submit" class="btn-primary">Save</button>
+            <a href="{{ path('app_repositories') }}" class="btn-secondary">Cancel</a>
+        </div>
+    {{ form_end(form) }}
+    {% set extra = repository|filter((v, k) => k not in ['type', 'url', 'name', 'no-api']) %}
+    {% if extra is not empty %}
+        <p class="mt-6 text-xs text-slate-500">Additional keys in satis.json are kept as they are:</p>
+        <pre class="pre mt-2">{{ extra|json_encode(constant('JSON_PRETTY_PRINT') b-or constant('JSON_UNESCAPED_SLASHES')) }}</pre>
+    {% endif %}
+</div>
+{% endblock %}

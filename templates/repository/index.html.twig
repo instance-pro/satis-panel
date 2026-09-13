@@ -1,0 +1,43 @@
+{% extends 'layout.html.twig' %}
+
+{% block title %}Repositories · {{ app_name }}{% endblock %}
+{% block heading %}Repositories{% endblock %}
+
+{% block content %}
+<div class="grid gap-6 lg:grid-cols-3">
+    <div class="card lg:col-span-2">
+        {% if repositories is empty %}
+            <p class="text-sm text-slate-500">No repositories yet. Add the first one on the right.</p>
+        {% else %}
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead><tr><th>Type</th><th>URL</th><th>Name</th><th></th></tr></thead>
+                    <tbody class="divide-y divide-slate-100">
+                    {% for index, repository in repositories %}
+                        <tr>
+                            <td><span class="badge-slate">{{ repository.type|default('?') }}</span>{% if repository['no-api']|default(false) %} <span class="badge-slate">no-api</span>{% endif %}</td>
+                            <td class="break-all font-mono text-xs">{{ repository.url|default('') }}</td>
+                            <td>{{ repository.name|default('') }}</td>
+                            <td class="whitespace-nowrap text-right">
+                                <a href="{{ path('app_repository_edit', {index: index}) }}" class="btn-secondary btn-sm">Edit</a>
+                                <form method="post" action="{{ path('app_repository_delete', {index: index}) }}" class="inline" data-confirm="Remove {{ repository.url|default('this repository') }} from satis.json?">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete-repository-' ~ index) }}">
+                                    <button type="submit" class="btn-danger btn-sm">Remove</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+    <div class="card">
+        <h2 class="mb-4 text-base font-semibold">Add repository</h2>
+        {{ form_start(form) }}
+            {{ form_widget(form) }}
+            <button type="submit" class="btn-primary">Add</button>
+        {{ form_end(form) }}
+    </div>
+</div>
+{% endblock %}

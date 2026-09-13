@@ -1,0 +1,12 @@
+.git
+.gitignore
+.env.local
+.env.*.local
+node_modules
+vendor
+var
+public/build
+docker-compose.yml
+README.md
+.env
+.env.example

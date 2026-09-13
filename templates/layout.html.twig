@@ -1,0 +1,52 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+{% set current = app.current_route %}
+{% set nav = [
+    {route: 'app_dashboard', label: 'Dashboard', match: ['app_dashboard']},
+    {route: 'app_repositories', label: 'Repositories', match: ['app_repositories', 'app_repository_edit']},
+    {route: 'app_configuration', label: 'Configuration', match: ['app_configuration']},
+    {route: 'app_build', label: 'Build', match: ['app_build']},
+    {route: 'app_users', label: 'Composer users', match: ['app_users']},
+    {route: 'app_ssh', label: 'SSH', match: ['app_ssh']},
+] %}
+<div class="flex min-h-full">
+    <aside class="hidden w-60 shrink-0 flex-col bg-slate-900 md:flex">
+        <div class="flex h-16 items-center gap-2 px-5 text-lg font-semibold text-white">
+            <span>📦</span> {{ app_name }}
+        </div>
+        <nav class="flex-1 space-y-1 px-3">
+            {% for item in nav %}
+                <a href="{{ path(item.route) }}" class="nav-link {{ current in item.match ? 'nav-link-active' }}">{{ item.label }}</a>
+            {% endfor %}
+        </nav>
+        <div class="border-t border-slate-800 px-5 py-4 text-xs text-slate-400">
+            Signed in as <span class="text-slate-200">{{ app.user ? app.user.userIdentifier : '' }}</span>
+            <form method="post" action="{{ path('app_logout') }}" class="mt-2">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
+                <button type="submit" class="text-slate-300 hover:text-white">Sign out</button>
+            </form>
+        </div>
+    </aside>
+    <div class="flex min-w-0 flex-1 flex-col">
+        <header class="flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 md:hidden">
+            <span class="font-semibold">📦 {{ app_name }}</span>
+            <nav class="flex gap-3 text-sm">
+                {% for item in nav %}
+                    <a href="{{ path(item.route) }}" class="{{ current in item.match ? 'text-sky-700 font-medium' : 'text-slate-600' }}">{{ item.label }}</a>
+                {% endfor %}
+            </nav>
+        </header>
+        <main class="flex-1 px-6 py-8">
+            <div class="mx-auto max-w-5xl">
+                <div class="mb-6 flex items-center justify-between">
+                    <h1 class="text-2xl font-semibold">{% block heading %}{% endblock %}</h1>
+                    <div>{% block actions %}{% endblock %}</div>
+                </div>
+                {% include '_flashes.html.twig' %}
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}

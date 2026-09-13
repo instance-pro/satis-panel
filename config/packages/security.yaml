@@ -1,0 +1,42 @@
+security:
+    password_hashers:
+        # ADMIN_PASSWORD may be plain text or a bcrypt/argon2 hash, see App\Security\AdminPasswordHasher
+        Symfony\Component\Security\Core\User\InMemoryUser:
+            id: App\Security\AdminPasswordHasher
+
+    providers:
+        admin:
+            id: App\Security\AdminUserProvider
+
+    firewalls:
+        dev:
+            pattern: ^/(_profiler|_wdt|build)/
+            security: false
+        webhook:
+            pattern: ^/webhook
+            security: false
+            stateless: true
+        main:
+            lazy: true
+            provider: admin
+            form_login:
+                login_path: app_login
+                check_path: app_login
+                enable_csrf: true
+                default_target_path: app_dashboard
+            logout:
+                path: app_logout
+                target: app_login
+
+    access_control:
+        - { path: ^/login, roles: PUBLIC_ACCESS }
+        - { path: ^/admin, roles: ROLE_ADMIN }
+
+when@test:
+    security:
+        password_hashers:
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost: 4
+                time_cost: 3
+                memory_cost: 10

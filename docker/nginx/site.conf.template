@@ -1,0 +1,76 @@
+# Rendered by satis-panel-entrypoint.sh with envsubst (only ${SATIS_OUTPUT_DIR} is substituted).
+server {
+    listen 80 default_server;
+    server_name _;
+    server_tokens off;
+
+    root /var/www/html/public;
+    index index.php;
+    client_max_body_size 10m;
+
+    gzip on;
+    gzip_types application/json text/plain;
+
+    # ------------------------------------------------------------------
+    # Satis output (package index, metadata, dist archives): basic auth
+    # ------------------------------------------------------------------
+    location = / {
+        root ${SATIS_OUTPUT_DIR};
+        include /etc/nginx/snippets/satis-auth.conf;
+        add_header X-Robots-Tag "noindex, nofollow" always;
+        try_files /index.html @app;
+    }
+
+    location ~ ^/(packages\.json|index\.html)$ {
+        root ${SATIS_OUTPUT_DIR};
+        include /etc/nginx/snippets/satis-auth.conf;
+        add_header X-Robots-Tag "noindex, nofollow" always;
+        add_header Cache-Control "private, no-cache" always;
+        try_files $uri =404;
+    }
+
+    location ~ ^/(p|p2|include|dist)/ {
+        root ${SATIS_OUTPUT_DIR};
+        include /etc/nginx/snippets/satis-auth.conf;
+        add_header X-Robots-Tag "noindex, nofollow" always;
+        add_header Cache-Control "private, no-cache" always;
+        try_files $uri =404;
+    }
+
+    # ------------------------------------------------------------------
+    # Web UI (Symfony)
+    # ------------------------------------------------------------------
+    location /build/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    location / {
+        try_files $uri /index.php$is_args$args;
+    }
+
+    location @app {
+        include fastcgi_params;
+        fastcgi_param HTTP_HOST $http_host;
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_param SCRIPT_FILENAME /var/www/html/public/index.php;
+        fastcgi_param SCRIPT_NAME /index.php;
+        fastcgi_param DOCUMENT_ROOT /var/www/html/public;
+    }
+
+    location ~ ^/index\.php(/|$) {
+        include fastcgi_params;
+        fastcgi_param HTTP_HOST $http_host;
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_split_path_info ^(.+\.php)(/.*)$;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        fastcgi_param DOCUMENT_ROOT $realpath_root;
+        fastcgi_read_timeout 300;
+        internal;
+    }
+
+    location ~ \.php$ {
+        return 404;
+    }
+}

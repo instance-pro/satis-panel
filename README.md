@@ -1,0 +1,157 @@
+# Satis Panel
+
+A small web UI around [composer/satis](https://github.com/composer/satis) for running a
+private Composer repository on [Coolify](https://coolify.io) (or any Docker host).
+Composer package `instance-pro/satis-panel`.
+
+It replaces the upstream [Satisfy](https://github.com/project-satisfy/satisfy) image,
+which is hard to run behind Coolify's proxy (build output lands next to `index.php`,
+basic-auth labels lock out the admin UI and the webhooks, `parameters.yml` is missing).
+
+**What the UI does**
+
+* Login for one admin account (`ADMIN_USER` / `ADMIN_PASSWORD`).
+* Repositories: add, edit and remove the entries of `satis.json`.
+* Configuration: name, homepage, require options, stability and the full
+  **archive** block (dist mirroring), which upstream Satisfy has no form for.
+* Composer users: HTTP basic auth for `packages.json`, metadata and dist files.
+  Stored as bcrypt hashes in an htpasswd file that nginx reads on every request.
+* SSH: generate or import a deploy key, show the public key to register at
+  Bitbucket/GitHub/GitLab, manage `known_hosts` for self-hosted servers.
+* Build: run `satis build` (full or per repository) in the background with live log.
+* Webhook: `POST /webhook/<secret>` rebuilds only the pushed repository
+  (GitHub, GitLab, Gitea, Bitbucket, Azure DevOps payloads).
+
+Everything else is Satis itself: the app writes `satis.json`, validates it against
+the Satis JSON schema and calls `vendor/bin/satis build`.
+
+## Stack
+
+* PHP 8.5 (php-fpm) + nginx in one container, Symfony 7.4, Vite + Tailwind CSS 4
+* `composer/satis` from `dev-main`
+* No database, all state lives in files on volumes
+
+## Deploy on Coolify
+
+1. Create a **Docker Compose** resource (or a Git repository with build pack
+   *Docker Compose*) pointing at this repository.
+2. Set the domain of the `panel` service. Coolify fills `SERVICE_FQDN_PANEL_80`
+   and routes the domain to port 80.
+3. Set the environment variables (at least `ADMIN_PASSWORD` and `SATIS_HOMEPAGE`).
+4. Deploy, open `https://<domain>/admin`, log in.
+5. *SSH*: generate a key and register the public key at your git hosting.
+6. *Repositories*: add your packages. *Configuration*: enable archives if Composer
+   clients should download dist files from Satis instead of from git.
+7. *Composer users*: create a user for your CI / developers.
+8. *Build*: run the first full build. The dashboard shows the webhook URL to register
+   for automatic partial builds on push.
+
+Composer clients:
+
+```json
+{
+    "repositories": [
+        { "type": "composer", "url": "https://satis.example.com" }
+    ]
+}
+```
+
+```
+composer config --global http-basic.satis.example.com <user> <password>
+```
+
+## Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `ADMIN_USER` | `admin` | Web UI user. |
+| `ADMIN_PASSWORD` | required | Web UI password, plain text or bcrypt/argon2 hash. Empty disables the login. |
+| `WEBHOOK_SECRET` | generated | Secret in the webhook URL. Generated once and stored in the config volume when empty. |
+| `APP_SECRET` | generated | Symfony secret. Generated once and stored in the config volume when empty. |
+| `SATIS_HOMEPAGE` | `http://localhost` | `homepage` of the generated `satis.json` (first start only). |
+| `SATIS_REPOSITORY_NAME` | `satis-panel/repository` | `name` of the generated `satis.json` (first start only). |
+| `SATIS_AUTH_DISABLED` | `0` | `1` serves the package files without authentication. |
+| `SSH_PRIVATE_KEY` | empty | Import an existing private key on first start instead of using the UI. |
+| `SSH_KEYSCAN_HOSTS` | empty | Space separated `host` or `host:port` entries trusted on start. github.com, gitlab.com and bitbucket.org are built in. |
+| `COMPOSER_AUTH` | empty | Composer auth JSON for HTTPS sources, e.g. `{"github-oauth":{"github.com":"ghp_..."}}`. An `auth.json` in the config volume works as well. |
+| `TRUSTED_PROXIES` | private networks | Proxies whose `X-Forwarded-*` headers are trusted. |
+| `APP_ENV` / `APP_DEBUG` | `prod` / `0` | Symfony environment. |
+
+## Volumes
+
+| Volume | Path | Content |
+|---|---|---|
+| `satis-panel-config` | `/data/config` | `satis.json`, `htpasswd`, optional `auth.json`, generated secrets |
+| `satis-panel-output` | `/data/output` | Satis build output (`packages.json`, `p2/`, `include/`, `dist/`, `index.html`) |
+| `satis-panel-var` | `/var/www/html/var` | Sessions, logs, build state and log |
+| `satis-panel-composer` | `/var/www/.composer` | Composer home and cache |
+| `satis-panel-ssh` | `/var/www/.ssh` | Deploy key, `config`, `known_hosts` |
+
+The entrypoint pins `output-dir` in `satis.json` to `/data/output`, the
+directory nginx serves.
+
+## Routing
+
+nginx serves the build output with basic auth (`/`, `/packages.json`, `/p/`, `/p2/`,
+`/include/`, `/dist/`) straight from the output volume. Everything else goes to the
+Symfony app: `/login`, `/admin/...` (session login) and `/webhook/<secret>` (no auth
+besides the secret).
+
+## Webhook
+
+```
+POST https://satis.example.com/webhook/<WEBHOOK_SECRET>
+```
+
+Register it as push webhook with a JSON payload. Every repository URL in the payload is
+matched against `satis.json` (scheme, credentials, `.git` and case are ignored) and
+`satis build --repository-url=<url>` runs for the matches. Responses:
+
+| Code | Meaning |
+|---|---|
+| 202 | build started, body lists the repositories |
+| 400 | no repository URL in the payload |
+| 404 | wrong secret, or no configured repository matches |
+| 409 | a build is already running, retry later |
+
+Manual triggers: `?url=<repository url>` for one repository, `?full=1` for a full build.
+
+## Command line
+
+```
+docker compose exec panel satis-panel-build                       # full build (cron / Coolify scheduled task)
+docker compose exec panel satis-panel-build --repository-url=<url>
+docker compose exec panel satis-panel-htpasswd <user> <password>  # add/update a Composer user
+docker compose exec -u www-data panel php bin/console app:user:remove <user>
+```
+
+## Local development
+
+```
+cp .env.example .env                       # compose values, set ADMIN_PASSWORD
+printf 'services:\n  panel:\n    ports:\n      - "8000:80"\n' > docker-compose.override.yml
+docker compose up --build
+```
+
+Then open http://localhost:8000/admin. Both files are git-ignored. Note that `.env` is the
+docker compose file here; the Symfony defaults are in `.env.dist`, which Symfony loads
+when no `.env` exists (the `.env` is excluded from the image).
+
+Without Docker: PHP 8.5 with `ext-zip`, `composer install`, `npm install && npm run build`
+(Node 20+), then `symfony serve` or `php -S localhost:8000 -t public`. In `dev` the
+data files live below `var/satis-panel/` and the login is `admin` / `admin` (`.env.dev`).
+Note that outside the container nothing protects the build output; the basic auth is
+done by nginx.
+
+## Project layout
+
+```
+assets/           Vite entry (app.js) and Tailwind CSS
+config/           Symfony configuration
+docker/           nginx template, php-fpm settings, entrypoint and helper scripts
+src/Auth          htpasswd management
+src/Satis         satis.json access, form models, build runner
+src/Ssh           deploy key and known_hosts management
+src/Webhook       payload parsing
+templates/        Twig templates
+```

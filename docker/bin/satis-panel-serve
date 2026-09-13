@@ -1,0 +1,20 @@
+#!/bin/bash
+# Runs php-fpm and nginx side by side; the container stops when either exits.
+set -e
+
+php-fpm &
+FPM_PID=$!
+nginx -g 'daemon off;' &
+NGINX_PID=$!
+
+shutdown() {
+    kill -TERM "$FPM_PID" "$NGINX_PID" 2>/dev/null || true
+    wait "$FPM_PID" "$NGINX_PID" 2>/dev/null || true
+}
+trap shutdown TERM INT
+
+wait -n "$FPM_PID" "$NGINX_PID"
+STATUS=$?
+echo "satis-panel-serve: a service exited with status $STATUS, shutting down"
+shutdown
+exit "$STATUS"

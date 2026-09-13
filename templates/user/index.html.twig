@@ -1,0 +1,42 @@
+{% extends 'layout.html.twig' %}
+
+{% block title %}Composer users · {{ app_name }}{% endblock %}
+{% block heading %}Composer users{% endblock %}
+
+{% block content %}
+{% if auth_disabled %}
+    <div class="mb-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">SATIS_AUTH_DISABLED is set, the package files are served without authentication. These users are ignored until it is unset.</div>
+{% endif %}
+<div class="grid gap-6 lg:grid-cols-3">
+    <div class="card lg:col-span-2">
+        <p class="mb-4 text-sm text-slate-600">These accounts protect <span class="code">packages.json</span>, the package metadata and the dist archives (HTTP basic auth, stored in <span class="code">{{ htpasswd_path }}</span>). Composer clients use them via <span class="code">auth.json</span> or <span class="code">composer config http-basic.&lt;host&gt; user password</span>.</p>
+        {% if users is empty %}
+            <p class="text-sm text-red-700">No users yet, nobody can download packages.</p>
+        {% else %}
+            <table class="table">
+                <thead><tr><th>User</th><th></th></tr></thead>
+                <tbody class="divide-y divide-slate-100">
+                {% for user in users %}
+                    <tr>
+                        <td class="font-mono">{{ user }}</td>
+                        <td class="text-right">
+                            <form method="post" action="{{ path('app_user_delete', {username: user}) }}" class="inline" data-confirm="Remove user {{ user }}?">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete-user-' ~ user) }}">
+                                <button type="submit" class="btn-danger btn-sm">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+    <div class="card">
+        <h2 class="mb-4 text-base font-semibold">Add or update user</h2>
+        {{ form_start(form) }}
+            {{ form_widget(form) }}
+            <button type="submit" class="btn-primary">Save</button>
+        {{ form_end(form) }}
+    </div>
+</div>
+{% endblock %}

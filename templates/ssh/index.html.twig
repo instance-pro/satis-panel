@@ -1,0 +1,81 @@
+{% extends 'layout.html.twig' %}
+
+{% block title %}SSH · {{ app_name }}{% endblock %}
+{% block heading %}SSH access{% endblock %}
+
+{% block content %}
+<div class="grid gap-6 lg:grid-cols-2">
+    <div class="card lg:col-span-2">
+        <h2 class="mb-2 text-base font-semibold">Deploy key</h2>
+        {% if has_key %}
+            <p class="mb-3 text-sm text-slate-600">Add this public key as a read-only deploy key (Bitbucket: access key, GitHub: deploy key, GitLab: deploy key) to every private repository, or to a machine user.</p>
+            <pre class="pre select-all">{{ public_key }}</pre>
+            <p class="mt-2 text-xs text-slate-500">{{ fingerprint }} · private key: <span class="code">{{ key_path }}</span></p>
+            <form method="post" action="{{ path('app_ssh_delete') }}" class="mt-4" data-confirm="Delete the SSH key? Repositories using it will stop building.">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete-ssh-key') }}">
+                <button type="submit" class="btn-danger btn-sm">Delete key</button>
+            </form>
+        {% else %}
+            <p class="text-sm text-slate-600">No SSH key yet. Generate one below or import an existing private key.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2 class="mb-4 text-base font-semibold">{{ has_key ? 'Replace with a new key' : 'Generate key' }}</h2>
+        {{ form_start(generate_form, {attr: has_key ? {'data-confirm': 'Generate a new key? The current key is replaced.'} : {}}) }}
+            {{ form_widget(generate_form) }}
+            <button type="submit" class="btn-primary">Generate</button>
+        {{ form_end(generate_form) }}
+    </div>
+
+    <div class="card">
+        <h2 class="mb-4 text-base font-semibold">Import private key</h2>
+        {{ form_start(import_form, {attr: has_key ? {'data-confirm': 'Import this key? The current key is replaced.'} : {}}) }}
+            {{ form_widget(import_form) }}
+            <button type="submit" class="btn-primary">Import</button>
+        {{ form_end(import_form) }}
+    </div>
+
+    <div class="card lg:col-span-2">
+        <h2 class="mb-2 text-base font-semibold">Known hosts</h2>
+        <p class="mb-4 text-sm text-slate-600">github.com, gitlab.com and bitbucket.org are trusted by default. Add self-hosted git servers here, otherwise SSH refuses to connect. Stored in <span class="code">{{ known_hosts_path }}</span>.</p>
+        <div class="grid gap-6 md:grid-cols-2">
+            <div>
+                {% if known_hosts is empty %}
+                    <p class="text-sm text-slate-500">No additional hosts.</p>
+                {% else %}
+                    <table class="table">
+                        <thead><tr><th>Host</th><th>Key type</th><th></th></tr></thead>
+                        <tbody class="divide-y divide-slate-100">
+                        {% for entry in known_hosts %}
+                            <tr>
+                                <td class="font-mono text-xs">{{ entry.host }}</td>
+                                <td class="text-xs">{{ entry.type }}</td>
+                                <td class="text-right">
+                                    {% if entry.host != '(hashed entry)' %}
+                                    <form method="post" action="{{ path('app_ssh_known_host_delete') }}" class="inline">
+                                        <input type="hidden" name="host" value="{{ entry.host }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete-known-host-' ~ entry.host) }}">
+                                        <button type="submit" class="btn-danger btn-sm">Remove</button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+            <div>
+                {{ form_start(known_host_form) }}
+                    <div class="grid gap-x-4 sm:grid-cols-3">
+                        <div class="sm:col-span-2">{{ form_row(known_host_form.host) }}</div>
+                        <div>{{ form_row(known_host_form.port) }}</div>
+                    </div>
+                    <button type="submit" class="btn-secondary">Scan host key</button>
+                {{ form_end(known_host_form) }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

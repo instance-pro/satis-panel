@@ -1,0 +1,52 @@
+{% extends 'layout.html.twig' %}
+
+{% block title %}Configuration · {{ app_name }}{% endblock %}
+{% block heading %}Configuration{% endblock %}
+
+{% block content %}
+{{ form_start(form) }}
+<div class="grid gap-6 lg:grid-cols-2">
+    <div class="card">
+        <h2 class="mb-4 text-base font-semibold">General</h2>
+        {{ form_row(form.name) }}
+        {{ form_row(form.homepage) }}
+        {{ form_row(form.description) }}
+        {{ form_row(form.minimumStability) }}
+        {{ form_row(form.requireAll) }}
+        {{ form_row(form.requireDependencies) }}
+        {{ form_row(form.requireDevDependencies) }}
+        {{ form_row(form.outputHtml) }}
+        {{ form_row(form.providers) }}
+    </div>
+    <div class="card">
+        <h2 class="mb-1 text-base font-semibold">Archives</h2>
+        <p class="mb-4 text-xs text-slate-500">Satis downloads every package version and serves the dist files itself (<span class="code">archive</span> block in satis.json).</p>
+        {{ form_row(form.archiveEnabled) }}
+        <div class="grid gap-x-4 sm:grid-cols-2">
+            <div>{{ form_row(form.archiveDirectory) }}</div>
+            <div>{{ form_row(form.archiveFormat) }}</div>
+        </div>
+        {{ form_row(form.archivePrefixUrl) }}
+        {{ form_row(form.archiveAbsoluteDirectory) }}
+        <div class="grid gap-x-4 sm:grid-cols-2">
+            <div>{{ form_row(form.archiveWhitelist) }}</div>
+            <div>{{ form_row(form.archiveBlacklist) }}</div>
+        </div>
+        {{ form_row(form.archiveSkipDev) }}
+        {{ form_row(form.archiveChecksum) }}
+        {{ form_row(form.archiveRearchive) }}
+        {{ form_row(form.archiveIgnoreFilters) }}
+        {{ form_row(form.archiveOverrideDistType) }}
+    </div>
+</div>
+<div class="mt-6">
+    <button type="submit" class="btn-primary">Save configuration</button>
+</div>
+{{ form_end(form) }}
+
+<div class="card mt-8">
+    <h2 class="mb-2 text-base font-semibold">Current satis.json</h2>
+    <p class="mb-3 text-xs text-slate-500"><span class="code">{{ config_path }}</span>. Keys this form does not cover (require, blacklist, abandoned, ...) can be edited in the file directly and are preserved.</p>
+    <pre class="pre">{{ raw_json }}</pre>
+</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+#!/bin/sh
+# Full satis rebuild for cron / Coolify scheduled tasks. Runs as www-data.
+#   satis-panel-build                                  full build
+#   satis-panel-build --repository-url=<url>           only the given repository
+set -e
+cd /var/www/html
+if [ "$(id -u)" = "0" ]; then
+    exec runuser -u www-data -- php bin/console app:satis:build "$@"
+fi
+exec php bin/console app:satis:build "$@"

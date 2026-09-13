@@ -1,0 +1,76 @@
+{% extends 'layout.html.twig' %}
+
+{% block title %}Dashboard · {{ app_name }}{% endblock %}
+{% block heading %}Dashboard{% endblock %}
+
+{% block content %}
+{% if config_error %}
+    <div class="mb-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ config_error }}</div>
+{% endif %}
+
+<div class="grid gap-6 md:grid-cols-2">
+    <div class="card">
+        <h2 class="mb-3 text-base font-semibold">Repository</h2>
+        <dl class="space-y-2 text-sm">
+            <div class="flex justify-between gap-4"><dt class="text-slate-500">Name</dt><dd>{{ config.name|default('–') }}</dd></div>
+            <div class="flex justify-between gap-4"><dt class="text-slate-500">Homepage</dt><dd class="truncate">{{ config.homepage|default('–') }}</dd></div>
+            <div class="flex justify-between gap-4"><dt class="text-slate-500">Repositories</dt><dd>{{ repository_count }}</dd></div>
+            <div class="flex justify-between gap-4"><dt class="text-slate-500">Archives (dist)</dt><dd>{{ archive_enabled ? 'enabled' : 'disabled' }}</dd></div>
+            <div class="flex justify-between gap-4"><dt class="text-slate-500">satis.json</dt><dd><span class="code">{{ config_path }}</span></dd></div>
+        </dl>
+        <div class="mt-4 flex gap-2">
+            <a href="{{ path('app_repositories') }}" class="btn-secondary btn-sm">Repositories</a>
+            <a href="{{ path('app_configuration') }}" class="btn-secondary btn-sm">Configuration</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2 class="mb-3 text-base font-semibold">Build</h2>
+        <dl class="space-y-2 text-sm">
+            <div class="flex justify-between gap-4"><dt class="text-slate-500">Last build</dt><dd><span class="{{ build.badgeClass }}">{{ build.label }}</span></dd></div>
+            <div class="flex justify-between gap-4"><dt class="text-slate-500">packages.json</dt><dd>{{ last_build_file ?? 'not built yet' }}</dd></div>
+            <div class="flex justify-between gap-4"><dt class="text-slate-500">Output directory</dt><dd><span class="code">{{ output_dir }}</span> {% if not output_writable %}<span class="badge-red">not writable</span>{% endif %}</dd></div>
+        </dl>
+        <div class="mt-4"><a href="{{ path('app_build') }}" class="btn-secondary btn-sm">Build page</a></div>
+    </div>
+
+    <div class="card">
+        <h2 class="mb-3 text-base font-semibold">Composer access</h2>
+        {% if auth_disabled %}
+            <p class="mb-3 text-sm text-amber-700">SATIS_AUTH_DISABLED is set: the package files are public.</p>
+        {% elseif users is empty %}
+            <p class="mb-3 text-sm text-red-700">No Composer users yet, nobody can download packages.</p>
+        {% else %}
+            <p class="mb-3 text-sm text-slate-600">{{ users|length }} user{{ users|length > 1 ? 's' }}: {{ users|join(', ') }}</p>
+        {% endif %}
+        <p class="mb-2 text-xs text-slate-500">Add to the composer.json of your projects:</p>
+        <pre class="pre">{
+    "repositories": [
+        { "type": "composer", "url": "{{ config.homepage|default(base_url) }}" }
+    ]
+}</pre>
+        <p class="mt-2 text-xs text-slate-500">Credentials: <span class="code">composer config --global http-basic.{{ (config.homepage|default(base_url))|replace({'https://': '', 'http://': ''}) }} &lt;user&gt; &lt;password&gt;</span></p>
+        <div class="mt-4"><a href="{{ path('app_users') }}" class="btn-secondary btn-sm">Composer users</a></div>
+    </div>
+
+    <div class="card">
+        <h2 class="mb-3 text-base font-semibold">Source access</h2>
+        <dl class="space-y-2 text-sm">
+            <div class="flex justify-between gap-4"><dt class="text-slate-500">SSH deploy key</dt><dd>{{ ssh_public_key ? '<span class="badge-green">present</span>' : '<span class="badge-slate">none</span>' }}</dd></div>
+            <div class="flex justify-between gap-4"><dt class="text-slate-500">Composer auth (HTTPS)</dt><dd>{{ composer_auth ? '<span class="badge-green">configured</span>' : '<span class="badge-slate">none</span>' }}</dd></div>
+        </dl>
+        <div class="mt-4"><a href="{{ path('app_ssh') }}" class="btn-secondary btn-sm">SSH</a></div>
+    </div>
+
+    <div class="card md:col-span-2">
+        <h2 class="mb-3 text-base font-semibold">Webhook</h2>
+        {% if webhook_url %}
+            <p class="mb-2 text-sm text-slate-600">Register this URL as push webhook (JSON payload) in GitHub, GitLab, Gitea, Bitbucket or Azure DevOps. Only the repository from the payload is rebuilt.</p>
+            <pre class="pre">{{ webhook_url }}</pre>
+            <p class="mt-2 text-xs text-slate-500">Manual trigger: <span class="code">curl -X POST "{{ webhook_url }}?url=&lt;repository url&gt;"</span> · full build: <span class="code">curl -X POST "{{ webhook_url }}?full=1"</span></p>
+        {% else %}
+            <p class="text-sm text-amber-700">WEBHOOK_SECRET is not set, the webhook endpoint is disabled.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
+parameters:
+    app.satis_config: '%env(resolve:SATIS_CONFIG)%'
+    app.satis_output_dir: '%env(resolve:SATIS_OUTPUT_DIR)%'
+    app.htpasswd_file: '%env(resolve:SATIS_HTPASSWD_FILE)%'
+    app.ssh_dir: '%env(resolve:SSH_DIR)%'
+    app.build_state_dir: '%kernel.project_dir%/var/satis'
+    app.satis_bin: '%kernel.project_dir%/vendor/bin/satis'
+    app.satis_schema: '%kernel.project_dir%/vendor/composer/satis/res/satis-schema.json'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        bind:
+            string $projectDir: '%kernel.project_dir%'
+            string $satisConfigFile: '%app.satis_config%'
+            string $satisOutputDir: '%app.satis_output_dir%'
+            string $satisSchemaFile: '%app.satis_schema%'
+            string $satisBin: '%app.satis_bin%'
+            string $htpasswdFile: '%app.htpasswd_file%'
+            string $sshDir: '%app.ssh_dir%'
+            string $buildStateDir: '%app.build_state_dir%'
+            string $adminUser: '%env(ADMIN_USER)%'
+            string $adminPassword: '%env(ADMIN_PASSWORD)%'
+            string $webhookSecret: '%env(WEBHOOK_SECRET)%'
+            bool $satisAuthDisabled: '%env(bool:SATIS_AUTH_DISABLED)%'
+
+    App\:
+        resource: '../src/'
