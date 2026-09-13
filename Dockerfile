@@ -68,7 +68,7 @@ RUN chmod 0755 /usr/local/bin/satis-panel-* \
     && chmod 700 /var/www/.ssh
 
 EXPOSE 80
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+HEALTHCHECK --interval=10s --timeout=5s --start-period=60s --start-interval=2s --retries=3 \
     CMD curl -fsS -o /dev/null http://127.0.0.1/login || exit 1
 
 ENTRYPOINT ["satis-panel-entrypoint.sh"]

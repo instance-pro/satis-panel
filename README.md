@@ -53,6 +53,28 @@ the Satis JSON schema and calls `vendor/bin/satis build`.
 8. *Build*: run the first full build. The dashboard shows the webhook URL to register
    for automatic partial builds on push.
 
+### Deployments without downtime
+
+With the Docker Compose resource Coolify stops the running stack, then starts the new
+one; the proxy answers 502 for the few seconds until the new container is healthy
+(the compose file uses `start_interval` so this is short). Coolify does rolling
+updates only for single-container applications. If even that window matters, deploy
+the image without the compose file:
+
+1. Create a **Redis** database resource in Coolify (any version 6+) and note its
+   internal URL.
+2. Create an application from this repository with build pack **Dockerfile**, port
+   `80`, and enable the health check (the image carries a `HEALTHCHECK` on `/login`).
+3. Environment variables: `ADMIN_PASSWORD`, `REDIS_URL` (the internal Redis URL,
+   e.g. `redis://:<password>@<redis-host>:6379`), optionally `TZ`.
+4. Persistent storage: add named volumes for `/data/config`, `/data/output`,
+   `/var/www/html/var`, `/var/www/.composer` and `/var/www/.ssh` (see *Volumes* below).
+5. Deploy. The homepage is taken from Coolify's `COOLIFY_URL` on first start.
+
+Coolify then starts the new container next to the old one and switches over once
+it is healthy. Both containers share the volumes; the build lock and the Redis
+queue are designed for that.
+
 Composer clients:
 
 ```json

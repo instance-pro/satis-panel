@@ -52,6 +52,8 @@ if [ ! -f "$SATIS_CONFIG" ]; then
     if [ -z "$HOMEPAGE" ] && [ -n "${SERVICE_URL_PANEL:-}" ]; then HOMEPAGE=$SERVICE_URL_PANEL; fi
     if [ -z "$HOMEPAGE" ] && [ -n "${SERVICE_FQDN_PANEL:-}" ]; then HOMEPAGE="https://${SERVICE_FQDN_PANEL#*://}"; fi
     if [ -z "$HOMEPAGE" ] && [ -n "${SERVICE_FQDN_PANEL_80:-}" ]; then HOMEPAGE="https://${SERVICE_FQDN_PANEL_80#*://}"; fi
+    # Coolify Dockerfile build pack: COOLIFY_URL holds the domain(s), comma separated.
+    if [ -z "$HOMEPAGE" ] && [ -n "${COOLIFY_URL:-}" ]; then HOMEPAGE=${COOLIFY_URL%%,*}; fi
     HOMEPAGE=${HOMEPAGE:-http://localhost}
     log "creating initial $SATIS_CONFIG (homepage $HOMEPAGE)"
     cat > "$SATIS_CONFIG" <<JSON

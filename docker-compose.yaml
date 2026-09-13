@@ -44,12 +44,19 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    # Coolify's proxy only routes to a healthy container. A short start_interval gets
+    # the new container into the routing a few seconds after a deploy instead of
+    # after the first regular interval (Coolify recreates compose services in place,
+    # rolling updates are only available with the Dockerfile build pack, see README).
     healthcheck:
       test: ['CMD', 'curl', '-fsS', '-o', '/dev/null', 'http://127.0.0.1/login']
-      interval: 30s
+      interval: 10s
       timeout: 5s
       retries: 3
-      start_period: 30s
+      start_period: 60s
+      start_interval: 2s
+    # Time the old container gets to finish requests before it is killed on deploy.
+    stop_grace_period: 15s
 
   # Redis keeps the webhook request log and the build queue.
   redis:
