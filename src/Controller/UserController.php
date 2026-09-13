@@ -6,6 +6,8 @@ namespace App\Controller;
 
 use App\Auth\HtpasswdManager;
 use App\Form\HtpasswdUserType;
+use App\Satis\ConfigException;
+use App\Satis\SatisConfig;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,6 +18,7 @@ final class UserController extends AbstractController
 {
     public function __construct(
         private readonly HtpasswdManager $htpasswd,
+        private readonly SatisConfig $config,
         private readonly bool $satisAuthDisabled,
     ) {
     }
@@ -39,8 +42,21 @@ final class UserController extends AbstractController
             }
         }
 
+        try {
+            $homepage = (string) ($this->config->load()['homepage'] ?? '');
+        } catch (ConfigException) {
+            $homepage = '';
+        }
+        $host = '' !== $homepage ? rtrim((string) preg_replace('#^https?://#', '', $homepage), '/') : $request->getHttpHost();
+
+        $users = [];
+        foreach ($this->htpasswd->users() as $user) {
+            $users[] = ['name' => $user, 'password' => $this->htpasswd->password($user)];
+        }
+
         return $this->render('user/index.html.twig', [
-            'users' => $this->htpasswd->users(),
+            'users' => $users,
+            'host' => $host,
             'form' => $form,
             'htpasswd_path' => $this->htpasswd->path(),
             'auth_disabled' => $this->satisAuthDisabled,

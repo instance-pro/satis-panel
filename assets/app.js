@@ -14,11 +14,48 @@ document.addEventListener("submit", (event) => {
 document.querySelectorAll("[data-copy]").forEach((button) => {
   button.addEventListener("click", async () => {
     const pre = button.parentElement?.querySelector("[data-snippet]");
-    if (!pre || !navigator.clipboard) return;
-    await navigator.clipboard.writeText(pre.textContent);
+    const value = button.dataset.copyValue ?? pre?.textContent;
+    if (!value || !navigator.clipboard) return;
+    await navigator.clipboard.writeText(value);
     const label = button.textContent;
     button.textContent = "Copied";
     setTimeout(() => (button.textContent = label), 1500);
+  });
+});
+
+// Composer users: "Change password" prefills the form with the user name.
+document.querySelectorAll("[data-change-user]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const form = document.querySelector("[data-user-form]");
+    if (!form) return;
+    const username = form.querySelector("[name$='[username]']");
+    const password = form.querySelector("[name$='[password]']");
+    if (username) username.value = button.dataset.changeUser;
+    if (password) password.value = "";
+    const title = document.querySelector("[data-user-form-title]");
+    if (title) title.textContent = `Change password of ${button.dataset.changeUser}`;
+    const submit = document.querySelector("[data-user-form-submit]");
+    if (submit) submit.textContent = "Update password";
+    form.scrollIntoView({ behavior: "smooth", block: "center" });
+    password?.focus();
+  });
+});
+
+// Composer users: reveal/hide the stored password of one row.
+document.querySelectorAll("[data-reveal]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const row = button.closest("[data-user-row]");
+    if (!row) return;
+    const show = button.textContent === "Show";
+    row.querySelectorAll("[data-secret]").forEach((el) => {
+      if (show) {
+        el.dataset.masked = el.textContent;
+        el.textContent = el.dataset.secret;
+      } else {
+        el.textContent = el.dataset.masked;
+      }
+    });
+    button.textContent = show ? "Hide" : "Show";
   });
 });
 
@@ -27,8 +64,10 @@ document.querySelectorAll("[data-generate-secret]").forEach((button) => {
   button.addEventListener("click", () => {
     const input = button.closest("form")?.querySelector("[data-secret-input]");
     if (!input) return;
-    const bytes = window.crypto.getRandomValues(new Uint8Array(24));
-    input.value = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    const length = Number(button.dataset.secretLength || 48);
+    const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const bytes = window.crypto.getRandomValues(new Uint8Array(length));
+    input.value = Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
     input.dispatchEvent(new Event("change", { bubbles: true }));
   });
 });

@@ -98,19 +98,25 @@
     @apply mb-1 block text-sm font-medium text-fg;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-md border px-4 py-1.5 text-sm font-medium shadow-xs transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-canvas disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-md border px-4 py-1.5 text-sm font-medium shadow-xs transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-canvas cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:text-fg-muted disabled:shadow-none disabled:hover:bg-btn;
   }
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md border px-4 py-1.5 text-sm font-medium shadow-xs transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-canvas disabled:cursor-not-allowed disabled:opacity-50 border-btn-border bg-success-emphasis text-white hover:bg-success-emphasis-hover focus:ring-success-emphasis;
+    @apply inline-flex items-center justify-center gap-2 rounded-md border px-4 py-1.5 text-sm font-medium shadow-xs transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-canvas cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:text-fg-muted disabled:shadow-none disabled:hover:bg-btn border-btn-border bg-success-emphasis text-white hover:bg-success-emphasis-hover focus:ring-success-emphasis;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md border px-4 py-1.5 text-sm font-medium shadow-xs transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-canvas disabled:cursor-not-allowed disabled:opacity-50 border-btn-border bg-btn text-fg hover:bg-btn-hover focus:ring-accent-emphasis;
+    @apply inline-flex items-center justify-center gap-2 rounded-md border px-4 py-1.5 text-sm font-medium shadow-xs transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-canvas cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:text-fg-muted disabled:shadow-none disabled:hover:bg-btn border-btn-border bg-btn text-fg hover:bg-btn-hover focus:ring-accent-emphasis;
   }
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 rounded-md border px-4 py-1.5 text-sm font-medium shadow-xs transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-canvas disabled:cursor-not-allowed disabled:opacity-50 border-btn-border bg-btn text-danger hover:border-danger-emphasis hover:bg-danger-emphasis hover:text-white focus:ring-danger-emphasis;
+    @apply inline-flex items-center justify-center gap-2 rounded-md border px-4 py-1.5 text-sm font-medium shadow-xs transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-canvas cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:text-fg-muted disabled:shadow-none disabled:hover:bg-btn border-btn-border bg-btn text-danger hover:border-danger-emphasis hover:bg-danger-emphasis hover:text-white focus:ring-danger-emphasis;
   }
   .btn-sm {
-    @apply px-3 py-1 text-xs;
+    @apply h-7 px-3 py-0 text-xs;
+  }
+  .code-box {
+    @apply inline-flex h-7 items-center rounded-md bg-neutral-muted px-2 font-mono text-xs text-fg;
+  }
+  .link-disabled {
+    @apply pointer-events-none text-fg-muted opacity-40;
   }
   .card {
     @apply rounded-md border border-line bg-canvas p-6;
@@ -139,6 +145,9 @@
   .flash-error {
     @apply mb-4 rounded-md border px-4 py-3 text-sm text-fg border-danger bg-danger-subtle;
   }
+  .flash-info {
+    @apply mb-4 rounded-md border px-4 py-3 text-sm text-fg border-accent-emphasis bg-accent-subtle;
+  }
   .flash-warning {
     @apply mb-4 rounded-md border px-4 py-3 text-sm text-fg border-attention bg-attention-subtle;
   }
@@ -149,7 +158,7 @@
     @apply bg-neutral-muted font-semibold before:absolute before:-left-3 before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-accent-emphasis;
   }
   .theme-toggle {
-    @apply inline-flex items-center gap-1.5 rounded-md border border-btn-border bg-btn px-2 py-1 text-xs text-fg hover:bg-btn-hover;
+    @apply inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md border border-btn-border bg-btn px-2 text-xs text-fg hover:bg-btn-hover;
   }
   .table {
     @apply min-w-full divide-y divide-line text-sm;

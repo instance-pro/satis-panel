@@ -114,8 +114,8 @@
             <div class="mt-4 flex items-center justify-between text-sm text-fg-muted">
                 <span>{{ page.total }} request{{ page.total != 1 ? 's' }} · page {{ page.page }} of {{ page.pages }}</span>
                 <div class="flex gap-2">
-                    <a class="btn-secondary btn-sm {{ page.page <= 1 ? 'pointer-events-none opacity-50' }}" href="{{ path('app_webhooks', {page: page.page - 1}) }}">Previous</a>
-                    <a class="btn-secondary btn-sm {{ page.page >= page.pages ? 'pointer-events-none opacity-50' }}" href="{{ path('app_webhooks', {page: page.page + 1}) }}">Next</a>
+                    <a class="btn-secondary btn-sm {{ page.page <= 1 ? 'link-disabled' }}" {{ page.page <= 1 ? 'aria-disabled="true"' }} href="{{ path('app_webhooks', {page: page.page - 1}) }}">Previous</a>
+                    <a class="btn-secondary btn-sm {{ page.page >= page.pages ? 'link-disabled' }}" {{ page.page >= page.pages ? 'aria-disabled="true"' }} href="{{ path('app_webhooks', {page: page.page + 1}) }}">Next</a>
                 </div>
             </div>
         {% endif %}

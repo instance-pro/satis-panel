@@ -18,12 +18,14 @@
                             <td><span class="badge-slate">{{ repository.type|default('?') }}</span>{% if repository['no-api']|default(false) %} <span class="badge-slate">no-api</span>{% endif %}{% if signed[index]|default(false) %} <span class="badge-green" title="Webhook requests must be signed">signed</span>{% endif %}</td>
                             <td class="break-all font-mono text-xs">{{ repository.url|default('') }}</td>
                             <td>{{ repository.name|default('') }}</td>
-                            <td class="whitespace-nowrap text-right">
-                                <a href="{{ path('app_repository_edit', {index: index}) }}" class="btn-secondary btn-sm">Edit</a>
-                                <form method="post" action="{{ path('app_repository_delete', {index: index}) }}" class="inline" data-confirm="Remove {{ repository.url|default('this repository') }} from satis.json?">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('delete-repository-' ~ index) }}">
-                                    <button type="submit" class="btn-danger btn-sm">Remove</button>
-                                </form>
+                            <td>
+                                <div class="flex justify-end gap-2 whitespace-nowrap">
+                                    <a href="{{ path('app_repository_edit', {index: index}) }}" class="btn-secondary btn-sm">Edit</a>
+                                    <form method="post" action="{{ path('app_repository_delete', {index: index}) }}" data-confirm="Remove {{ repository.url|default('this repository') }} from satis.json?">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete-repository-' ~ index) }}">
+                                        <button type="submit" class="btn-danger btn-sm">Remove</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     {% endfor %}

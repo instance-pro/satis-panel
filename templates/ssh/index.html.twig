@@ -51,9 +51,9 @@
                             <tr>
                                 <td class="font-mono text-xs">{{ entry.host }}</td>
                                 <td class="text-xs">{{ entry.type }}</td>
-                                <td class="text-right">
+                                <td>
                                     {% if entry.host != '(hashed entry)' %}
-                                    <form method="post" action="{{ path('app_ssh_known_host_delete') }}" class="inline">
+                                    <form method="post" action="{{ path('app_ssh_known_host_delete') }}" class="flex justify-end">
                                         <input type="hidden" name="host" value="{{ entry.host }}">
                                         <input type="hidden" name="_token" value="{{ csrf_token('delete-known-host-' ~ entry.host) }}">
                                         <button type="submit" class="btn-danger btn-sm">Remove</button>

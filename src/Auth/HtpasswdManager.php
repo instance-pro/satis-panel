@@ -6,6 +6,8 @@ namespace App\Auth;
 
 /**
  * Maintains the htpasswd file nginx uses for the package files (bcrypt hashes).
+ * The plain passwords are kept as well in composer-users.json next to it, so
+ * that they can be looked up in the UI later (Composer clients need them).
  */
 final class HtpasswdManager
 {
@@ -18,6 +20,21 @@ final class HtpasswdManager
     public function path(): string
     {
         return $this->htpasswdFile;
+    }
+
+    public function passwordsPath(): string
+    {
+        return dirname($this->htpasswdFile).'/composer-users.json';
+    }
+
+    /**
+     * Plain password of a user, null when unknown (user created before passwords were kept).
+     */
+    public function password(string $user): ?string
+    {
+        $password = $this->readPasswords()[$user] ?? null;
+
+        return is_string($password) && '' !== $password ? $password : null;
     }
 
     /**
@@ -44,6 +61,10 @@ final class HtpasswdManager
         $users = $this->read();
         $users[$user] = password_hash($password, PASSWORD_BCRYPT);
         $this->write($users);
+
+        $passwords = $this->readPasswords();
+        $passwords[$user] = $password;
+        $this->writePasswords($passwords);
     }
 
     public function remove(string $user): void
@@ -51,6 +72,42 @@ final class HtpasswdManager
         $users = $this->read();
         unset($users[$user]);
         $this->write($users);
+
+        $passwords = $this->readPasswords();
+        unset($passwords[$user]);
+        $this->writePasswords($passwords);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function readPasswords(): array
+    {
+        if (!is_file($this->passwordsPath())) {
+            return [];
+        }
+        $data = json_decode((string) file_get_contents($this->passwordsPath()), true);
+
+        return is_array($data) ? array_filter($data, 'is_string') : [];
+    }
+
+    /**
+     * @param array<string, string> $passwords
+     */
+    private function writePasswords(array $passwords): void
+    {
+        ksort($passwords, SORT_NATURAL | SORT_FLAG_CASE);
+        $file = $this->passwordsPath();
+        $tmp = $file.'.tmp';
+        if (false === file_put_contents($tmp, json_encode((object) $passwords, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n", LOCK_EX)) {
+            throw new \RuntimeException(sprintf('Cannot write %s.', $file));
+        }
+        chmod($tmp, 0600);
+        self::keepOwnership($file, $tmp);
+        if (!rename($tmp, $file)) {
+            @unlink($tmp);
+            throw new \RuntimeException(sprintf('Cannot write %s.', $file));
+        }
     }
 
     /**

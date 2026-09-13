@@ -110,11 +110,12 @@
             <button type="button" class="btn copy" data-copy>Copy</button>
         </div>
 
-        <div class="step"><span class="step-no">2</span> Store your credentials (once per machine, or per project without <code>--global</code>)</div>
+        <div class="step"><span class="step-no">2</span> Store your credentials in the project</div>
         <div class="snippet-row">
-            <pre class="snippet" data-snippet>composer config --global http-basic.{{ host }} &lt;user&gt; &lt;password&gt;</pre>
+            <pre class="snippet" data-snippet>composer config http-basic.{{ host }} &lt;user&gt; &lt;password&gt;</pre>
             <button type="button" class="btn copy" data-copy>Copy</button>
         </div>
+        <p class="muted small" style="margin:.375rem 0 0">Writes <code>auth.json</code> next to your composer.json, keep it out of git. Add <code>--global</code> to store it in your Composer home instead; containers such as ddev lose that on restart.</p>
 
         <details class="muted small" style="margin-top:.75rem">
             <summary style="cursor:pointer">Or add it to composer.json by hand</summary>
