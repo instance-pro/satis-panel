@@ -15,7 +15,7 @@
     {{ form_end(form) }}
     {% set extra = repository|filter((v, k) => k not in ['type', 'url', 'name', 'no-api']) %}
     {% if extra is not empty %}
-        <p class="mt-6 text-xs text-slate-500">Additional keys in satis.json are kept as they are:</p>
+        <p class="mt-6 text-xs text-fg-muted">Additional keys in satis.json are kept as they are:</p>
         <pre class="pre mt-2">{{ extra|json_encode(constant('JSON_PRETTY_PRINT') b-or constant('JSON_UNESCAPED_SLASHES')) }}</pre>
     {% endif %}
 </div>

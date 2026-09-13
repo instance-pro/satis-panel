@@ -1,68 +1,169 @@
 @import "tailwindcss";
 @source "../templates";
 
+/* Class based dark mode: <html class="dark">, toggled in app.js */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* GitHub Primer inspired palette. The semantic tokens below switch with the theme,
+   so templates only use bg-canvas, text-fg, border-line, text-accent, ... */
+:root {
+  --gh-canvas: #ffffff;
+  --gh-canvas-subtle: #f6f8fa;
+  --gh-line: #d1d9e0;
+  --gh-line-muted: #e5e9ee;
+  --gh-fg: #1f2328;
+  --gh-fg-muted: #59636e;
+  --gh-accent: #0969da;
+  --gh-accent-emphasis: #0969da;
+  --gh-accent-subtle: #ddf4ff;
+  --gh-success: #1a7f37;
+  --gh-success-emphasis: #1f883d;
+  --gh-success-emphasis-hover: #1a7f37;
+  --gh-success-subtle: #dafbe1;
+  --gh-danger: #d1242f;
+  --gh-danger-emphasis: #cf222e;
+  --gh-danger-emphasis-hover: #a40e26;
+  --gh-danger-subtle: #ffebe9;
+  --gh-attention: #9a6700;
+  --gh-attention-subtle: #fff8c5;
+  --gh-neutral-muted: #afb8c133;
+  --gh-btn: #f6f8fa;
+  --gh-btn-hover: #eff2f5;
+  --gh-btn-border: #1f232826;
+}
+
+.dark {
+  color-scheme: dark;
+  --gh-canvas: #0d1117;
+  --gh-canvas-subtle: #151b23;
+  --gh-line: #3d444d;
+  --gh-line-muted: #262c36;
+  --gh-fg: #f0f6fc;
+  --gh-fg-muted: #9198a1;
+  --gh-accent: #4493f8;
+  --gh-accent-emphasis: #1f6feb;
+  --gh-accent-subtle: #388bfd1a;
+  --gh-success: #3fb950;
+  --gh-success-emphasis: #238636;
+  --gh-success-emphasis-hover: #29903b;
+  --gh-success-subtle: #2ea04326;
+  --gh-danger: #f85149;
+  --gh-danger-emphasis: #da3633;
+  --gh-danger-emphasis-hover: #b62324;
+  --gh-danger-subtle: #f851491a;
+  --gh-attention: #d29922;
+  --gh-attention-subtle: #bb800926;
+  --gh-neutral-muted: #656c7633;
+  --gh-btn: #212830;
+  --gh-btn-hover: #262c36;
+  --gh-btn-border: #3d444d;
+}
+
+@theme inline {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --color-canvas: var(--gh-canvas);
+  --color-canvas-subtle: var(--gh-canvas-subtle);
+  --color-line: var(--gh-line);
+  --color-line-muted: var(--gh-line-muted);
+  --color-fg: var(--gh-fg);
+  --color-fg-muted: var(--gh-fg-muted);
+  --color-accent: var(--gh-accent);
+  --color-accent-emphasis: var(--gh-accent-emphasis);
+  --color-accent-subtle: var(--gh-accent-subtle);
+  --color-success: var(--gh-success);
+  --color-success-emphasis: var(--gh-success-emphasis);
+  --color-success-emphasis-hover: var(--gh-success-emphasis-hover);
+  --color-success-subtle: var(--gh-success-subtle);
+  --color-danger: var(--gh-danger);
+  --color-danger-emphasis: var(--gh-danger-emphasis);
+  --color-danger-emphasis-hover: var(--gh-danger-emphasis-hover);
+  --color-danger-subtle: var(--gh-danger-subtle);
+  --color-attention: var(--gh-attention);
+  --color-attention-subtle: var(--gh-attention-subtle);
+  --color-neutral-muted: var(--gh-neutral-muted);
+  --color-btn: var(--gh-btn);
+  --color-btn-hover: var(--gh-btn-hover);
+  --color-btn-border: var(--gh-btn-border);
+}
+
 @layer components {
   .input {
-    @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200;
+    @apply w-full rounded-md border border-line bg-canvas px-3 py-1.5 text-sm text-fg shadow-xs placeholder:text-fg-muted focus:border-accent-emphasis focus:outline-none focus:ring-2 focus:ring-accent-emphasis/30;
   }
   .checkbox {
-    @apply h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500;
+    @apply h-4 w-4 rounded border-line bg-canvas accent-accent-emphasis focus:ring-accent-emphasis;
   }
   .label {
-    @apply mb-1 block text-sm font-medium text-slate-700;
+    @apply mb-1 block text-sm font-medium text-fg;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium shadow-sm transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-md border px-4 py-1.5 text-sm font-medium shadow-xs transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-canvas disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium shadow-sm transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 bg-sky-600 text-white hover:bg-sky-700 focus:ring-sky-500;
+    @apply inline-flex items-center justify-center gap-2 rounded-md border px-4 py-1.5 text-sm font-medium shadow-xs transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-canvas disabled:cursor-not-allowed disabled:opacity-50 border-btn-border bg-success-emphasis text-white hover:bg-success-emphasis-hover focus:ring-success-emphasis;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium shadow-sm transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus:ring-sky-500;
+    @apply inline-flex items-center justify-center gap-2 rounded-md border px-4 py-1.5 text-sm font-medium shadow-xs transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-canvas disabled:cursor-not-allowed disabled:opacity-50 border-btn-border bg-btn text-fg hover:bg-btn-hover focus:ring-accent-emphasis;
   }
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium shadow-sm transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+    @apply inline-flex items-center justify-center gap-2 rounded-md border px-4 py-1.5 text-sm font-medium shadow-xs transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-canvas disabled:cursor-not-allowed disabled:opacity-50 border-btn-border bg-btn text-danger hover:border-danger-emphasis hover:bg-danger-emphasis hover:text-white focus:ring-danger-emphasis;
   }
   .btn-sm {
-    @apply px-3 py-1.5 text-xs;
+    @apply px-3 py-1 text-xs;
   }
   .card {
-    @apply rounded-lg border border-slate-200 bg-white p-6 shadow-sm;
+    @apply rounded-md border border-line bg-canvas p-6;
   }
   .badge {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
   }
   .badge-green {
-    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-800;
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-success-subtle text-success;
   }
   .badge-red {
-    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-800;
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-danger-subtle text-danger;
   }
   .badge-amber {
-    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-amber-100 text-amber-800;
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-attention-subtle text-attention;
   }
   .badge-slate {
-    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-100 text-slate-700;
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-neutral-muted text-fg-muted;
+  }
+  .flash {
+    @apply mb-4 rounded-md border px-4 py-3 text-sm text-fg;
+  }
+  .flash-success {
+    @apply mb-4 rounded-md border px-4 py-3 text-sm text-fg border-success bg-success-subtle;
+  }
+  .flash-error {
+    @apply mb-4 rounded-md border px-4 py-3 text-sm text-fg border-danger bg-danger-subtle;
+  }
+  .flash-warning {
+    @apply mb-4 rounded-md border px-4 py-3 text-sm text-fg border-attention bg-attention-subtle;
   }
   .nav-link {
-    @apply flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white;
+    @apply relative flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-fg hover:bg-neutral-muted;
   }
   .nav-link-active {
-    @apply bg-slate-800 text-white;
+    @apply bg-neutral-muted font-semibold before:absolute before:-left-3 before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-accent-emphasis;
+  }
+  .theme-toggle {
+    @apply inline-flex items-center gap-1.5 rounded-md border border-btn-border bg-btn px-2 py-1 text-xs text-fg hover:bg-btn-hover;
   }
   .table {
-    @apply min-w-full divide-y divide-slate-200 text-sm;
+    @apply min-w-full divide-y divide-line text-sm;
   }
   .table th {
-    @apply px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500;
+    @apply px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-fg-muted;
   }
   .table td {
-    @apply px-3 py-2 align-top text-slate-700;
+    @apply px-3 py-2 align-top text-fg;
   }
   .code {
-    @apply rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-800;
+    @apply rounded-md bg-neutral-muted px-1.5 py-0.5 font-mono text-xs text-fg;
   }
   .pre {
-    @apply max-h-[32rem] overflow-auto rounded-md bg-slate-900 p-4 font-mono text-xs leading-relaxed text-slate-100 whitespace-pre-wrap break-all;
+    @apply max-h-[32rem] overflow-auto rounded-md border border-line bg-canvas-subtle p-4 font-mono text-xs leading-relaxed text-fg whitespace-pre-wrap break-all;
   }
 }

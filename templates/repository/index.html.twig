@@ -7,12 +7,12 @@
 <div class="grid gap-6 lg:grid-cols-3">
     <div class="card lg:col-span-2">
         {% if repositories is empty %}
-            <p class="text-sm text-slate-500">No repositories yet. Add the first one on the right.</p>
+            <p class="text-sm text-fg-muted">No repositories yet. Add the first one on the right.</p>
         {% else %}
             <div class="overflow-x-auto">
                 <table class="table">
                     <thead><tr><th>Type</th><th>URL</th><th>Name</th><th></th></tr></thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody class="divide-y divide-line">
                     {% for index, repository in repositories %}
                         <tr>
                             <td><span class="badge-slate">{{ repository.type|default('?') }}</span>{% if repository['no-api']|default(false) %} <span class="badge-slate">no-api</span>{% endif %}</td>

@@ -38,7 +38,7 @@
     <div class="mb-3 flex items-start gap-2">
         <div class="pt-0.5">{{- form_widget(form) -}}</div>
         <div>
-            {%- set label_attr = label_attr|merge({class: 'text-sm text-slate-700'}) -%}
+            {%- set label_attr = label_attr|merge({class: 'text-sm text-fg'}) -%}
             {{- form_label(form, null, {label_attr: label_attr}) -}}
             {{- form_help(form) -}}
             {{- form_errors(form) -}}
@@ -48,13 +48,13 @@
 
 {%- block form_help -%}
     {%- if help is not empty -%}
-        <p class="mt-1 text-xs text-slate-500">{{ help|raw }}</p>
+        <p class="mt-1 text-xs text-fg-muted">{{ help|raw }}</p>
     {%- endif -%}
 {%- endblock form_help -%}
 
 {%- block form_errors -%}
     {%- if errors|length > 0 -%}
-        <ul class="mt-1 text-sm text-red-600">
+        <ul class="mt-1 text-sm text-danger">
             {%- for error in errors -%}
                 <li>{{ error.message }}</li>
             {%- endfor -%}

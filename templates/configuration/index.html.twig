@@ -20,7 +20,7 @@
     </div>
     <div class="card">
         <h2 class="mb-1 text-base font-semibold">Archives</h2>
-        <p class="mb-4 text-xs text-slate-500">Satis downloads every package version and serves the dist files itself (<span class="code">archive</span> block in satis.json).</p>
+        <p class="mb-4 text-xs text-fg-muted">Satis downloads every package version and serves the dist files itself (<span class="code">archive</span> block in satis.json).</p>
         {{ form_row(form.archiveEnabled) }}
         <div class="grid gap-x-4 sm:grid-cols-2">
             <div>{{ form_row(form.archiveDirectory) }}</div>
@@ -46,7 +46,7 @@
 
 <div class="card mt-8">
     <h2 class="mb-2 text-base font-semibold">Current satis.json</h2>
-    <p class="mb-3 text-xs text-slate-500"><span class="code">{{ config_path }}</span>. Keys this form does not cover (require, blacklist, abandoned, ...) can be edited in the file directly and are preserved.</p>
+    <p class="mb-3 text-xs text-fg-muted"><span class="code">{{ config_path }}</span>. Keys this form does not cover (require, blacklist, abandoned, ...) can be edited in the file directly and are preserved.</p>
     <pre class="pre">{{ raw_json }}</pre>
 </div>
 {% endblock %}

@@ -82,3 +82,41 @@ function generateCsrfToken(form) {
 }
 
 document.addEventListener("submit", (event) => generateCsrfToken(event.target), true);
+
+// Theme toggle: system -> light -> dark -> system, stored in localStorage.
+const THEMES = ["system", "light", "dark"];
+const themeIcons = { system: "🖥️", light: "☀️", dark: "🌙" };
+const themeLabels = { system: "System", light: "Light", dark: "Dark" };
+const mediaDark = window.matchMedia("(prefers-color-scheme: dark)");
+
+function currentTheme() {
+  try {
+    const stored = localStorage.getItem("theme");
+    return THEMES.includes(stored) ? stored : "system";
+  } catch (error) {
+    return "system";
+  }
+}
+
+function applyTheme(theme) {
+  const dark = theme === "dark" || (theme === "system" && mediaDark.matches);
+  document.documentElement.classList.toggle("dark", dark);
+  document.querySelectorAll("[data-theme-icon]").forEach((el) => (el.textContent = themeIcons[theme]));
+  document.querySelectorAll("[data-theme-label]").forEach((el) => (el.textContent = themeLabels[theme]));
+}
+
+document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const next = THEMES[(THEMES.indexOf(currentTheme()) + 1) % THEMES.length];
+    try {
+      localStorage.setItem("theme", next);
+    } catch (error) {
+      // localStorage unavailable, apply for this page only
+    }
+    applyTheme(next);
+  });
+});
+mediaDark.addEventListener("change", () => {
+  if (currentTheme() === "system") applyTheme("system");
+});
+applyTheme(currentTheme());

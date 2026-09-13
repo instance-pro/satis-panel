@@ -7,7 +7,7 @@
 <div class="card" data-build-status-url="{{ path('app_build_status') }}" data-build-running="{{ status.running ? '1' : '0' }}">
     <div class="mb-4 flex flex-wrap items-center gap-3">
         <span data-build-state class="{{ status.badgeClass }}">{{ status.label }}</span>
-        <span data-build-meta class="text-xs text-slate-500">{{ status.meta }}</span>
+        <span data-build-meta class="text-xs text-fg-muted">{{ status.meta }}</span>
     </div>
     <div class="mb-4 flex flex-wrap items-end gap-4">
         <form method="post" action="{{ path('app_build_run') }}">
@@ -29,7 +29,7 @@
         </form>
         {% endif %}
     </div>
-    <p class="mb-2 text-xs text-slate-500">Command: <span class="code">{{ command }}</span></p>
+    <p class="mb-2 text-xs text-fg-muted">Command: <span class="code">{{ command }}</span></p>
     <pre class="pre" data-build-log>{{ log is empty ? '(no output yet)' : log }}</pre>
 </div>
 {% endblock %}

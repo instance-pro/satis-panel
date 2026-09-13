@@ -5,17 +5,17 @@
 
 {% block content %}
 {% if auth_disabled %}
-    <div class="mb-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">SATIS_AUTH_DISABLED is set, the package files are served without authentication. These users are ignored until it is unset.</div>
+    <div class="flash-warning mb-6">SATIS_AUTH_DISABLED is set, the package files are served without authentication. These users are ignored until it is unset.</div>
 {% endif %}
 <div class="grid gap-6 lg:grid-cols-3">
     <div class="card lg:col-span-2">
-        <p class="mb-4 text-sm text-slate-600">These accounts protect <span class="code">packages.json</span>, the package metadata and the dist archives (HTTP basic auth, stored in <span class="code">{{ htpasswd_path }}</span>). Composer clients use them via <span class="code">auth.json</span> or <span class="code">composer config http-basic.&lt;host&gt; user password</span>.</p>
+        <p class="mb-4 text-sm text-fg-muted">These accounts protect <span class="code">packages.json</span>, the package metadata and the dist archives (HTTP basic auth, stored in <span class="code">{{ htpasswd_path }}</span>). Composer clients use them via <span class="code">auth.json</span> or <span class="code">composer config http-basic.&lt;host&gt; user password</span>.</p>
         {% if users is empty %}
-            <p class="text-sm text-red-700">No users yet, nobody can download packages.</p>
+            <p class="text-sm text-danger">No users yet, nobody can download packages.</p>
         {% else %}
             <table class="table">
                 <thead><tr><th>User</th><th></th></tr></thead>
-                <tbody class="divide-y divide-slate-100">
+                <tbody class="divide-y divide-line">
                 {% for user in users %}
                     <tr>
                         <td class="font-mono">{{ user }}</td>

@@ -1,6 +1,6 @@
 {% for label, messages in app.flashes %}
     {% for message in messages %}
-        <div class="mb-4 rounded-md border px-4 py-3 text-sm {{ label == 'error' ? 'border-red-200 bg-red-50 text-red-800' : (label == 'warning' ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800') }}" role="alert">
+        <div class="{{ label == 'error' ? 'flash-error' : (label == 'warning' ? 'flash-warning' : 'flash-success') }}" role="alert">
             {{ message }}
         </div>
     {% endfor %}
