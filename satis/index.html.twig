@@ -61,7 +61,7 @@
         .badge-red { background: var(--danger-subtle); color: var(--danger); }
         .badge-amber { background: var(--attention-subtle); color: var(--attention); }
         .pill { display: inline-block; margin: .125rem .25rem .125rem 0; border: 1px solid var(--line); border-radius: 9999px; padding: .1rem .625rem; font-size: .75rem; background: var(--canvas-subtle); color: var(--fg); cursor: pointer; }
-        .pill:hover { border-color: var(--accent-emphasis); color: var(--accent); text-decoration: none; }
+        .pill:hover, .pill-active { border-color: var(--accent-emphasis); color: var(--accent); text-decoration: none; }
         pre.snippet { border: 1px solid var(--line); border-radius: .375rem; background: var(--canvas-subtle); padding: 1rem; font-size: .75rem; line-height: 1.6; overflow: auto; margin: .5rem 0; white-space: pre-wrap; word-break: break-all; }
         .kv { display: grid; grid-template-columns: 8rem 1fr; gap: .375rem 1rem; margin: .75rem 0 0; font-size: .875rem; }
         .kv dt { color: var(--fg-muted); margin: 0; }
@@ -73,6 +73,14 @@
         .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); border: 1px solid var(--line); border-radius: .375rem; background: var(--canvas-subtle); color: var(--fg); padding: .5rem 1rem; font-size: .8125rem; box-shadow: 0 4px 12px rgba(0,0,0,.15); opacity: 0; transition: opacity .2s; pointer-events: none; }
         .toast.show { opacity: 1; }
         .hidden { display: none !important; }
+        .pkg-details { margin-top: 1rem; border-top: 1px solid var(--line); padding-top: .75rem; }
+        .pkg-details > summary { cursor: pointer; color: var(--accent); font-size: .875rem; }
+        .version-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .75rem 0 .25rem; }
+        .dep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: .5rem 1.5rem; margin-top: .5rem; }
+        .dep > summary { cursor: pointer; font-weight: 500; font-size: .875rem; padding: .25rem 0; }
+        .dep-list { list-style: none; margin: .25rem 0 .5rem; padding: 0 0 0 .5rem; font-size: .8125rem; border-left: 2px solid var(--line); }
+        .dep-list li { padding: .1rem 0 .1rem .5rem; overflow-wrap: anywhere; }
+        .pill { font: inherit; font-size: .75rem; }
         .step { display: flex; align-items: center; gap: .5rem; margin: .75rem 0 .375rem; font-weight: 500; }
         .step-no { display: inline-flex; align-items: center; justify-content: center; width: 1.375rem; height: 1.375rem; border-radius: 9999px; background: var(--accent-emphasis); color: #fff; font-size: .75rem; font-weight: 600; }
         .snippet-row { display: flex; gap: .5rem; align-items: stretch; }
@@ -157,13 +165,8 @@
                     {% for version in package.versions %}
                         {% set branchAlias = attribute(version.extra['branch-alias']|default({}), version.prettyVersion)|default('') %}
                         {% set title = (version.distType ? 'dist-reference: ' ~ version.distReference : 'source-reference: ' ~ version.sourceReference) ~ (branchAlias ? ', branch-alias: ' ~ branchAlias : '') %}
-                        {% if version.distType and version.distUrl %}
-                            <a class="pill" href="{{ version.distUrl }}" title="{{ title }}" data-version="{{ version.prettyVersion }}" data-name="{{ p.name }}">{{ version.prettyVersion }}</a>
-                        {% else %}
-                            <span class="pill" title="{{ title }}" data-version="{{ version.prettyVersion }}" data-name="{{ p.name }}">{{ version.prettyVersion }}</span>
-                        {% endif %}
+                        <button type="button" class="pill" title="{{ title }}" data-version-pill="{{ version.prettyVersion }}">{{ version.prettyVersion }}</button>
                     {% endfor %}
-                    <div class="muted small" style="margin-top:.25rem">Click a version to copy the <code>composer require</code> command.</div>
                 </dd>
                 {% if p.keywords %}
                     <dt>Keywords</dt>
@@ -187,6 +190,71 @@
                     <dd>{% for dependency in requiredBy %}<div><a href="#{{ dependency }}">{{ dependency }}</a></div>{% endfor %}</dd>
                 {% endif %}
             </dl>
+
+            <details class="pkg-details" data-details>
+                <summary>Versions, dependencies and details</summary>
+                <div class="version-bar">
+                    <label class="muted small" for="v-{{ p.name|replace({'/': '-'}) }}">Version</label>
+                    <select id="v-{{ p.name|replace({'/': '-'}) }}" class="input" style="width:auto" data-version-select>
+                        {% for version in package.versions %}<option value="{{ version.prettyVersion }}">{{ version.prettyVersion }}</option>{% endfor %}
+                    </select>
+                    <button type="button" class="btn" data-copy-require data-name="{{ p.name }}">Copy composer require</button>
+                </div>
+                {% for version in package.versions %}
+                <div class="version-panel" data-version-panel="{{ version.prettyVersion }}" {% if not loop.first %}hidden{% endif %}>
+                    <dl class="kv" style="margin-top:.5rem">
+                        {% if version.releaseDate %}<dt>Released</dt><dd>{{ version.releaseDate|date('Y-m-d H:i') }} UTC</dd>{% endif %}
+                        <dt>Stability</dt><dd>{{ version.stability }}{% if version.type %} · {{ version.type }}{% endif %}{% if version.license %} · {{ version.license|join(', ') }}{% endif %}</dd>
+                        {% if version.sourceUrl %}
+                            <dt>Source</dt>
+                            <dd class="mono small">{% if version.sourceUrl matches '#^https?://#' %}<a href="{{ version.sourceUrl }}">{{ version.sourceUrl }}</a>{% else %}{{ version.sourceUrl }}{% endif %}{% if version.sourceReference %} @ {{ version.sourceReference|slice(0, 12) }}{% endif %}</dd>
+                        {% endif %}
+                        {% if version.distUrl %}
+                            <dt>Dist</dt>
+                            <dd class="mono small"><a href="{{ version.distUrl }}">{{ version.distType }} archive</a>{% if version.distReference %} @ {{ version.distReference|slice(0, 12) }}{% endif %}</dd>
+                        {% endif %}
+                        {% if version.binaries %}<dt>Binaries</dt><dd class="mono small">{{ version.binaries|join(', ') }}</dd>{% endif %}
+                    </dl>
+                    {% set sections = [
+                        {label: 'requires', links: version.requires},
+                        {label: 'requires (dev)', links: version.devRequires},
+                        {label: 'conflicts', links: version.conflicts},
+                        {label: 'replaces', links: version.replaces},
+                        {label: 'provides', links: version.provides},
+                    ] %}
+                    <div class="dep-grid">
+                    {% for section in sections %}
+                        {% if section.links|length %}
+                        <details class="dep">
+                            <summary>{{ section.label }} <span class="badge">{{ section.links|length }}</span></summary>
+                            <ul class="dep-list">
+                                {% for link in section.links %}
+                                    <li><span class="mono">{% if attribute(packages, link.target) is defined %}<a href="#{{ link.target }}">{{ link.target }}</a>{% elseif link.target matches '#^[a-z0-9_.-]+/[a-z0-9_.-]+$#i' %}<a href="https://packagist.org/packages/{{ link.target }}">{{ link.target }}</a>{% else %}{{ link.target }}{% endif %}</span> <span class="muted">{{ link.prettyConstraint }}</span></li>
+                                {% endfor %}
+                            </ul>
+                        </details>
+                        {% endif %}
+                    {% endfor %}
+                    {% if version.suggests|length %}
+                        <details class="dep">
+                            <summary>suggests <span class="badge">{{ version.suggests|length }}</span></summary>
+                            <ul class="dep-list">
+                                {% for target, reason in version.suggests %}
+                                    <li><span class="mono">{% if attribute(packages, target) is defined %}<a href="#{{ target }}">{{ target }}</a>{% elseif target matches '#^[a-z0-9_.-]+/[a-z0-9_.-]+$#i' %}<a href="https://packagist.org/packages/{{ target }}">{{ target }}</a>{% else %}{{ target }}{% endif %}</span> <span class="muted">{{ reason }}</span></li>
+                                {% endfor %}
+                            </ul>
+                        </details>
+                    {% endif %}
+                    {% if version.autoload|length %}
+                        <details class="dep">
+                            <summary>autoload <span class="badge">{{ version.autoload|length }}</span></summary>
+                            <pre class="snippet" style="font-size:.75rem">{{ version.autoload|json_encode(constant('JSON_PRETTY_PRINT') b-or constant('JSON_UNESCAPED_SLASHES')) }}</pre>
+                        </details>
+                    {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </details>
         </article>
     {% else %}
         <div class="card muted">No packages have been built yet.</div>
@@ -218,23 +286,38 @@
         }
         input.addEventListener('input', filter);
 
-        // Copy "composer require" on version click
-        var toast = document.querySelector('[data-toast]');
-        function showToast(text) {
-            toast.textContent = text;
-            toast.classList.add('show');
-            clearTimeout(toast._t);
-            toast._t = setTimeout(function () { toast.classList.remove('show'); }, 1800);
+        // Version pills open the details and select that version; the copy button
+        // copies "composer require" for the selected version.
+        function requireCommand(name, version) {
+            var constraint = /^v?\d+\.\d+/.test(version) ? '^' + version.replace(/^v/, '').split('.').slice(0, 2).join('.') : version;
+            return 'composer require ' + name + ':"' + constraint + '"';
         }
-        document.querySelectorAll('[data-version]').forEach(function (el) {
-            el.addEventListener('click', function (event) {
-                var version = el.getAttribute('data-version');
-                var constraint = /^v?\d+\.\d+/.test(version) ? '^' + version.replace(/^v/, '').split('.').slice(0, 2).join('.') : version;
-                var command = 'composer require ' + el.getAttribute('data-name') + ':"' + constraint + '"';
-                if (navigator.clipboard) {
-                    event.preventDefault();
-                    navigator.clipboard.writeText(command).then(function () { showToast('Copied: ' + command); });
-                }
+        function selectVersion(card, version) {
+            var select = card.querySelector('[data-version-select]');
+            if (select) select.value = version;
+            card.querySelectorAll('[data-version-panel]').forEach(function (panel) {
+                panel.hidden = panel.getAttribute('data-version-panel') !== version;
+            });
+            card.querySelectorAll('[data-version-pill]').forEach(function (pill) {
+                pill.classList.toggle('pill-active', pill.getAttribute('data-version-pill') === version);
+            });
+        }
+        cards.forEach(function (card) {
+            var first = card.querySelector('[data-version-pill]');
+            if (first) selectVersion(card, first.getAttribute('data-version-pill'));
+            card.querySelectorAll('[data-version-pill]').forEach(function (pill) {
+                pill.addEventListener('click', function () {
+                    var details = card.querySelector('[data-details]');
+                    if (details) details.open = true;
+                    selectVersion(card, pill.getAttribute('data-version-pill'));
+                });
+            });
+            var select = card.querySelector('[data-version-select]');
+            if (select) select.addEventListener('change', function () { selectVersion(card, select.value); });
+            var copy = card.querySelector('[data-copy-require]');
+            if (copy) copy.addEventListener('click', function () {
+                var command = requireCommand(copy.getAttribute('data-name'), select ? select.value : '');
+                if (navigator.clipboard) navigator.clipboard.writeText(command).then(function () { showToast('Copied: ' + command); });
             });
         });
 
