@@ -27,6 +27,8 @@ security:
             logout:
                 path: app_logout
                 target: app_login
+                # Drop cached pages (the package index at /) from the browser on logout.
+                clear_site_data: [cache]
 
     access_control:
         - { path: ^/login, roles: PUBLIC_ACCESS }

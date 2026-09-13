@@ -18,10 +18,20 @@ server {
         root ${SATIS_OUTPUT_DIR};
         include /etc/nginx/snippets/satis-auth.conf;
         add_header X-Robots-Tag "noindex, nofollow" always;
+        # The page must not survive a logout in the browser cache.
+        add_header Cache-Control "private, no-store" always;
         try_files /index.html @app;
     }
 
-    location ~ ^/(packages\.json|index\.html)$ {
+    location = /index.html {
+        root ${SATIS_OUTPUT_DIR};
+        include /etc/nginx/snippets/satis-auth.conf;
+        add_header X-Robots-Tag "noindex, nofollow" always;
+        add_header Cache-Control "private, no-store" always;
+        try_files $uri =404;
+    }
+
+    location = /packages.json {
         root ${SATIS_OUTPUT_DIR};
         include /etc/nginx/snippets/satis-auth.conf;
         add_header X-Robots-Tag "noindex, nofollow" always;
