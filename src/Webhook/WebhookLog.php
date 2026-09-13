@@ -118,7 +118,9 @@ final class WebhookLog
             if (!$this->isEnabled()) {
                 throw new \RuntimeException('REDIS_URL is not configured.');
             }
-            $this->client = new Client($this->redisUrl, ['exceptions' => true]);
+            // redis://:@host (empty password from an unset variable) means no authentication
+            $url = (string) preg_replace('#^([a-z]+://):@#', '$1', trim($this->redisUrl));
+            $this->client = new Client($url, ['exceptions' => true]);
         }
 
         return $this->client;
