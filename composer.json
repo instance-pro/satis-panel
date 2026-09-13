@@ -2,7 +2,7 @@
     "name": "instance-pro/satis-panel",
     "description": "Web UI for composer/satis: repositories, archive settings, Composer users, SSH deploy key, builds and webhooks.",
     "type": "project",
-    "license": "proprietary",
+    "license": "MIT",
     "minimum-stability": "dev",
     "prefer-stable": true,
     "require": {

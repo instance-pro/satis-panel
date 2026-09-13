@@ -226,3 +226,7 @@ src/Ssh           deploy key and known_hosts management
 src/Webhook       payload parsing
 templates/        Twig templates
 ```
+
+## License
+
+MIT, see [LICENSE](LICENSE).
