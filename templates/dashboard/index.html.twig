@@ -15,7 +15,7 @@
             <div class="flex justify-between gap-4"><dt class="text-fg-muted">Name</dt><dd>{{ config.name|default('–') }}</dd></div>
             <div class="flex justify-between gap-4"><dt class="text-fg-muted">Description</dt><dd class="text-right">{{ config.description|default('–') }}</dd></div>
             <div class="flex justify-between gap-4"><dt class="text-fg-muted">Homepage</dt><dd class="truncate">{{ config.homepage|default('–') }}</dd></div>
-            <div class="flex justify-between gap-4"><dt class="text-fg-muted">Repositories</dt><dd>{{ repository_count }}</dd></div>
+            <div class="flex justify-between gap-4"><dt class="text-fg-muted">Repositories</dt><dd>{{ repository_count }}{% if repository_count > 0 %} <span class="text-fg-muted">({{ built_count }} in build, {{ package_count }} package{{ package_count != 1 ? 's' }})</span>{% endif %}</dd></div>
             <div class="flex justify-between gap-4"><dt class="text-fg-muted">Archives (dist)</dt><dd>{{ archive_enabled ? 'enabled' : 'disabled' }}</dd></div>
             <div class="flex justify-between gap-4"><dt class="text-fg-muted">satis.json</dt><dd><span class="code">{{ config_path }}</span></dd></div>
         </dl>

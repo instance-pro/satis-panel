@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Auth\HtpasswdManager;
+use App\Satis\BuildOutput;
 use App\Satis\BuildRunner;
 use App\Satis\ConfigException;
 use App\Satis\SatisConfig;
@@ -19,6 +20,7 @@ final class DashboardController extends AbstractController
     public function __construct(
         private readonly SatisConfig $config,
         private readonly BuildRunner $builds,
+        private readonly BuildOutput $output,
         private readonly HtpasswdManager $htpasswd,
         private readonly SshKeyManager $ssh,
         private readonly string $webhookSecret,
@@ -37,6 +39,7 @@ final class DashboardController extends AbstractController
             $configError = $e->getMessage();
         }
 
+        $built = array_filter($this->output->packagesForRepositories($config['repositories'] ?? []));
         $outputDir = $this->config->outputDir();
         $packagesJson = $outputDir.'/packages.json';
         $composerAuth = '' !== (string) getenv('COMPOSER_AUTH') || is_file((getenv('COMPOSER_HOME') ?: '').'/auth.json');
@@ -46,6 +49,8 @@ final class DashboardController extends AbstractController
             'config_error' => $configError,
             'config_path' => $this->config->path(),
             'repository_count' => count($config['repositories'] ?? []),
+            'built_count' => count($built),
+            'package_count' => count(array_unique(array_merge([], ...array_values($built)))),
             'archive_enabled' => isset($config['archive']),
             'output_dir' => $outputDir,
             'output_writable' => is_dir($outputDir) && is_writable($outputDir),

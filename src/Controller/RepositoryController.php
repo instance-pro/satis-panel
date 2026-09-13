@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Form\RepositoryType;
+use App\Satis\BuildOutput;
 use App\Satis\ConfigException;
 use App\Satis\RepositoryData;
 use App\Satis\RepositoryUrlMatcher;
@@ -21,6 +22,7 @@ final class RepositoryController extends AbstractController
     public function __construct(
         private readonly SatisConfig $config,
         private readonly WebhookSecrets $secrets,
+        private readonly BuildOutput $output,
     ) {
     }
 
@@ -52,6 +54,8 @@ final class RepositoryController extends AbstractController
 
         return $this->render('repository/index.html.twig', [
             'repositories' => $config['repositories'],
+            'built' => $this->output->packagesForRepositories($config['repositories']),
+            'output_exists' => $this->output->exists(),
             'signed' => array_map(static fn (array $r): bool => isset($signed[RepositoryUrlMatcher::normalize((string) ($r['url'] ?? ''))]), $config['repositories']),
             'form' => $form,
         ]);

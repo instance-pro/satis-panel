@@ -16,7 +16,20 @@
                     {% for index, repository in repositories %}
                         <tr>
                             <td><span class="badge-slate">{{ repository.type|default('?') }}</span>{% if repository['no-api']|default(false) %} <span class="badge-slate">no-api</span>{% endif %}{% if signed[index]|default(false) %} <span class="badge-green" title="Webhook requests must be signed">signed</span>{% endif %}</td>
-                            <td class="break-all font-mono text-xs">{{ repository.url|default('') }}</td>
+                            <td class="break-all font-mono text-xs">
+                                {{ repository.url|default('') }}
+                                {% set packages = built[index]|default([]) %}
+                                <div class="mt-1 flex flex-wrap items-center gap-1 font-sans">
+                                    {% if packages is not empty %}
+                                        <span class="badge-green" title="Packages from this repository in the current build">built</span>
+                                        {% for package in packages %}<span class="badge-slate font-mono">{{ package }}</span>{% endfor %}
+                                    {% elseif output_exists %}
+                                        <span class="badge-amber" title="No package of this repository is in the current build. Run a build or check its log.">not in build</span>
+                                    {% else %}
+                                        <span class="badge-slate">not built yet</span>
+                                    {% endif %}
+                                </div>
+                            </td>
                             <td>{{ repository.name|default('') }}</td>
                             <td>
                                 <div class="flex justify-end gap-2 whitespace-nowrap">
