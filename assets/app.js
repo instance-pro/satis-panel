@@ -119,7 +119,7 @@ if (buildPanel) {
       badge.className = alive ? "badge-green" : "badge-red";
       badge.textContent = alive ? `worker ${queue.worker.state}` : "worker not running";
     }
-    if (meta) meta.textContent = queue.worker ? `last seen ${queue.worker.seen_at} UTC` : "";
+    if (meta) meta.textContent = queue.worker ? `last seen ${queue.worker.seen_at}` : "";
     const list = queuePanel.querySelector("[data-queue-list]");
     if (!list) return;
     list.replaceChildren();

@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Satis\BuildQueue;
 use App\Satis\BuildRunner;
 use App\Satis\BuildRunningException;
+use App\Satis\BuildStatus;
 use App\Satis\SatisConfig;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -97,7 +98,7 @@ final class BuildController extends AbstractController
             $info['entries'] = $this->queue->entries();
             $worker = $this->queue->worker();
             if (null !== $worker) {
-                $info['worker'] = ['seen_at' => $worker['seen_at']->format('Y-m-d H:i:s'), 'state' => $worker['state'], 'alive' => $worker['alive']];
+                $info['worker'] = ['seen_at' => BuildStatus::local($worker['seen_at']), 'state' => $worker['state'], 'alive' => $worker['alive']];
             }
         } catch (\Throwable $e) {
             $info['error'] = $e->getMessage();

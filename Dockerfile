@@ -34,6 +34,7 @@ RUN apt-get update \
     && ssh-keyscan -H github.com gitlab.com bitbucket.org >> /etc/ssh/ssh_known_hosts 2>/dev/null
 
 ENV APP_ENV=prod \
+    TZ=UTC \
     APP_DEBUG=0 \
     APP_CACHE_DIR=/var/www/html/cache \
     HOME=/var/www \

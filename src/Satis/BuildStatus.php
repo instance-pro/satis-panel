@@ -51,14 +51,22 @@ final class BuildStatus
         };
     }
 
+    /** Formats a timestamp in the configured timezone (TZ), including its abbreviation. */
+    public static function local(\DateTimeInterface $date): string
+    {
+        return \DateTimeImmutable::createFromInterface($date)
+            ->setTimezone(new \DateTimeZone(date_default_timezone_get()))
+            ->format('Y-m-d H:i:s T');
+    }
+
     public function meta(): string
     {
         $parts = [];
         if (null !== $this->startedAt) {
-            $parts[] = 'started '.$this->startedAt->format('Y-m-d H:i:s').' UTC';
+            $parts[] = 'started '.self::local($this->startedAt);
         }
         if (null !== $this->finishedAt) {
-            $parts[] = 'finished '.$this->finishedAt->format('Y-m-d H:i:s').' UTC';
+            $parts[] = 'finished '.self::local($this->finishedAt);
         }
         if (null !== $this->exitCode) {
             $parts[] = 'exit code '.$this->exitCode;

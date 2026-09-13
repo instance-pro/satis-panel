@@ -54,7 +54,7 @@ final class DashboardController extends AbstractController
             'archive_enabled' => isset($config['archive']),
             'output_dir' => $outputDir,
             'output_writable' => is_dir($outputDir) && is_writable($outputDir),
-            'last_build_file' => is_file($packagesJson) ? (new \DateTimeImmutable('@'.(filemtime($packagesJson) ?: 0)))->format('Y-m-d H:i:s') : null,
+            'last_build_file' => is_file($packagesJson) ? date('Y-m-d H:i:s T', filemtime($packagesJson) ?: 0) : null,
             'build' => $this->builds->status(),
             'users' => $this->htpasswd->users(),
             'auth_disabled' => $this->satisAuthDisabled,

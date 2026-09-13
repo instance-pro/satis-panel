@@ -9,6 +9,18 @@ log() { echo "satis-panel-entrypoint: $*"; }
 
 mkdir -p "$CONFIG_DIR" "$SATIS_OUTPUT_DIR" "$APP/var" "$COMPOSER_HOME" "$SSH_DIR"
 
+# ---------------------------------------------------------------- timezone
+# TZ (e.g. Europe/Berlin) applies to PHP (UI, logs), nginx and the shell alike.
+TZ=${TZ:-UTC}
+if [ ! -f "/usr/share/zoneinfo/$TZ" ] || ! php -r 'exit(in_array($argv[1], timezone_identifiers_list(), true) ? 0 : 1);' "$TZ"; then
+    log "WARNING: unknown timezone '$TZ', using UTC"
+    TZ=UTC
+fi
+export TZ
+ln -sf "/usr/share/zoneinfo/$TZ" /etc/localtime
+echo "$TZ" > /etc/timezone
+echo "date.timezone = $TZ" > /usr/local/etc/php/conf.d/zz-timezone.ini
+
 # ---------------------------------------------------------------- secrets
 # Generated once and kept in the config volume when not provided.
 gen_secret() {

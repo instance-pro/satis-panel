@@ -42,7 +42,7 @@
             <span class="badge-red">Redis error</span>
         {% else %}
             <span data-worker-badge class="{{ queue.worker and queue.worker.alive ? 'badge-green' : 'badge-red' }}">{{ queue.worker and queue.worker.alive ? 'worker ' ~ queue.worker.state : 'worker not running' }}</span>
-            <span data-worker-meta class="text-xs text-fg-muted">{{ queue.worker ? 'last seen ' ~ queue.worker.seen_at ~ ' UTC' : '' }}</span>
+            <span data-worker-meta class="text-xs text-fg-muted">{{ queue.worker ? 'last seen ' ~ queue.worker.seen_at : '' }}</span>
         {% endif %}
     </div>
     {% if not queue.enabled %}
