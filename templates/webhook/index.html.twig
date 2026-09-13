@@ -1,0 +1,122 @@
+{% extends 'layout.html.twig' %}
+
+{% block title %}Webhooks · {{ app_name }}{% endblock %}
+{% block heading %}Webhooks{% endblock %}
+
+{% block content %}
+<div class="card mb-6">
+    <h2 class="mb-2 text-base font-semibold">Endpoint</h2>
+    {% if webhook_url %}
+        <p class="mb-2 text-sm text-fg-muted">Register this URL as push webhook (JSON payload). The repository is detected from the payload and rebuilt on its own.</p>
+        <pre class="pre">{{ webhook_url }}</pre>
+        <p class="mt-2 text-xs text-fg-muted">Manual trigger: <span class="code">curl -X POST "{{ webhook_url }}?url=&lt;repository url&gt;"</span> · full build: <span class="code">curl -X POST "{{ webhook_url }}?full=1"</span></p>
+    {% else %}
+        <p class="text-sm text-attention">WEBHOOK_SECRET is not set, the webhook endpoint is disabled.</p>
+    {% endif %}
+</div>
+
+{% if not enabled %}
+    <div class="card">
+        <h2 class="mb-2 text-base font-semibold">Request log</h2>
+        <p class="text-sm text-fg-muted">The request log is off. Set <span class="code">REDIS_URL</span> (e.g. <span class="code">redis://redis:6379</span>) to keep the last webhook requests with payload, detected repositories and result.</p>
+    </div>
+{% elseif error %}
+    <div class="flash-error">Redis is configured but not reachable: {{ error }}</div>
+{% else %}
+    <div class="mb-4 flex flex-wrap items-end justify-between gap-4">
+        <form method="post" action="{{ path('app_webhooks_retention') }}" class="flex items-end gap-2">
+            <input type="hidden" name="_token" value="{{ csrf_token('webhook-retention') }}">
+            <div>
+                <label for="retention" class="label">Keep last</label>
+                <select id="retention" name="retention" class="input">
+                    {% for option in retention_options %}
+                        <option value="{{ option }}" {{ option == retention ? 'selected' }}>{{ option }} requests</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn-secondary">Save</button>
+        </form>
+        <form method="post" action="{{ path('app_webhooks_clear') }}" data-confirm="Delete all logged webhook requests?">
+            <input type="hidden" name="_token" value="{{ csrf_token('webhook-clear') }}">
+            <button type="submit" class="btn-danger btn-sm" {{ page.total == 0 ? 'disabled' }}>Clear log</button>
+        </form>
+    </div>
+
+    <div class="card">
+        {% if page.entries is empty %}
+            <p class="text-sm text-fg-muted">No webhook requests yet.</p>
+        {% else %}
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead><tr><th>Received</th><th>Source</th><th>Response</th><th>Repositories</th><th></th></tr></thead>
+                    <tbody class="divide-y divide-line">
+                    {% for entry in page.entries %}
+                        {% set status = entry.status|default(0) %}
+                        {% set badge = status == 202 ? 'badge-green' : (status == 409 ? 'badge-amber' : 'badge-red') %}
+                        <tr>
+                            <td class="whitespace-nowrap">
+                                {{ entry.received_at|date('Y-m-d H:i:s') }}
+                                <div class="text-xs text-fg-muted">{{ entry.ip|default('') }}</div>
+                            </td>
+                            <td>
+                                <span class="badge-slate">{{ entry.provider|default('unknown') }}</span>
+                                {% if entry.event|default('') %}<div class="mt-1 text-xs text-fg-muted">{{ entry.event }}</div>{% endif %}
+                            </td>
+                            <td>
+                                <span class="{{ badge }}">{{ status }}</span>
+                                <div class="mt-1 max-w-xs text-xs text-fg-muted">{{ entry.message|default('') }}</div>
+                            </td>
+                            <td class="font-mono text-xs">
+                                {% for url in entry.matched|default([]) %}<div>{{ url }}</div>{% endfor %}
+                                {% if entry.matched|default([]) is empty and entry.candidates|default([]) is not empty %}
+                                    <div class="text-fg-muted">no match for {{ entry.candidates|length }} URL{{ entry.candidates|length > 1 ? 's' }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="text-right">
+                                <details class="text-left">
+                                    <summary class="cursor-pointer text-xs text-accent">Details</summary>
+                                    <div class="mt-2 w-[42rem] max-w-[70vw] space-y-2 text-xs">
+                                        {% if entry.query|default('') %}<div><span class="text-fg-muted">Query:</span> <span class="code">{{ entry.query }}</span></div>{% endif %}
+                                        {% if entry.headers|default({}) is not empty %}
+                                            <div><span class="text-fg-muted">Headers:</span>
+                                                {% for name, value in entry.headers %}<div class="font-mono">{{ name }}: {{ value }}</div>{% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        {% if entry.candidates|default([]) is not empty %}
+                                            <div><span class="text-fg-muted">URLs in payload:</span>
+                                                {% for url in entry.candidates %}<div class="font-mono">{{ url }}</div>{% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <span class="text-fg-muted">Payload ({{ entry.payload_bytes|default(0) }} bytes{{ entry.payload_truncated|default(false) ? ', truncated' }}):</span>
+                                            {% set pretty = entry.payload|default('') %}
+                                            {% if pretty starts with '{' or pretty starts with '[' %}
+                                                {% set decoded = pretty|json_decode_safe %}
+                                                {% if decoded is not null %}{% set pretty = decoded|json_encode(constant('JSON_PRETTY_PRINT') b-or constant('JSON_UNESCAPED_SLASHES')) %}{% endif %}
+                                            {% endif %}
+                                            <pre class="pre mt-1 max-h-96">{{ pretty is empty ? '(empty)' : pretty }}</pre>
+                                        </div>
+                                        <div>
+                                            <span class="text-fg-muted">Response (HTTP {{ status }}):</span>
+                                            {% set response = entry.response|default('') %}
+                                            <pre class="pre mt-1 max-h-64">{{ response is iterable ? response|json_encode(constant('JSON_PRETTY_PRINT') b-or constant('JSON_UNESCAPED_SLASHES')) : response }}</pre>
+                                        </div>
+                                    </div>
+                                </details>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4 flex items-center justify-between text-sm text-fg-muted">
+                <span>{{ page.total }} request{{ page.total != 1 ? 's' }} · page {{ page.page }} of {{ page.pages }}</span>
+                <div class="flex gap-2">
+                    <a class="btn-secondary btn-sm {{ page.page <= 1 ? 'pointer-events-none opacity-50' }}" href="{{ path('app_webhooks', {page: page.page - 1}) }}">Previous</a>
+                    <a class="btn-secondary btn-sm {{ page.page >= page.pages ? 'pointer-events-none opacity-50' }}" href="{{ path('app_webhooks', {page: page.page + 1}) }}">Next</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}

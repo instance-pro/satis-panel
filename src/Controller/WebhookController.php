@@ -10,6 +10,8 @@ use App\Satis\ConfigException;
 use App\Satis\RepositoryUrlMatcher;
 use App\Satis\SatisConfig;
 use App\Webhook\PayloadParser;
+use App\Webhook\RequestSummary;
+use App\Webhook\WebhookLog;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -33,6 +35,7 @@ final class WebhookController
         private readonly BuildRunner $builds,
         private readonly PayloadParser $parser,
         private readonly RepositoryUrlMatcher $matcher,
+        private readonly WebhookLog $log,
         private readonly LoggerInterface $logger,
     ) {
     }
@@ -40,18 +43,37 @@ final class WebhookController
     #[Route('/webhook/{token}', name: 'app_webhook', methods: ['POST'])]
     public function __invoke(string $token, Request $request): JsonResponse
     {
-        if ('' === $this->webhookSecret || !hash_equals($this->webhookSecret, $token)) {
-            return new JsonResponse(['error' => 'Not found.'], 404);
+        $authorized = '' !== $this->webhookSecret && hash_equals($this->webhookSecret, $token);
+        $candidates = [];
+        $matched = [];
+
+        if (!$authorized) {
+            $response = new JsonResponse(['error' => 'Not found.'], 404);
+            $message = 'Invalid webhook secret.';
+        } else {
+            [$response, $message, $candidates, $matched] = $this->handle($request);
         }
 
+        $this->log->record(RequestSummary::build($request, $response, $message, $candidates, $matched, $authorized));
+
+        return $response;
+    }
+
+    /**
+     * @return array{0: JsonResponse, 1: string, 2: list<string>, 3: list<string>}
+     */
+    private function handle(Request $request): array
+    {
         try {
             $repositories = $this->config->repositories();
         } catch (ConfigException $e) {
-            return new JsonResponse(['error' => $e->getMessage()], 500);
+            return [new JsonResponse(['error' => $e->getMessage()], 500), $e->getMessage(), [], []];
         }
 
         if ($request->query->getBoolean('full')) {
-            return $this->start([], 'webhook (full)');
+            [$response, $message] = $this->start([], 'webhook (full)');
+
+            return [$response, $message, [], []];
         }
 
         $candidates = [];
@@ -64,33 +86,42 @@ final class WebhookController
         if (null !== $payload) {
             $candidates = [...$candidates, ...$this->parser->extractUrls($payload)];
         }
+        $candidates = array_values(array_unique($candidates));
         if ([] === $candidates) {
-            return new JsonResponse(['error' => 'No repository URL found in the request. Send a JSON push payload or pass ?url=<repository url>.'], 400);
+            $message = 'No repository URL found in the request. Send a JSON push payload or pass ?url=<repository url>.';
+
+            return [new JsonResponse(['error' => $message], 400), $message, [], []];
         }
 
         $matched = $this->matcher->match($repositories, $candidates);
         if ([] === $matched) {
             $this->logger->info('Webhook: no configured repository matches.', ['candidates' => $candidates]);
+            $message = 'No configured repository matches the request.';
 
-            return new JsonResponse(['error' => 'No configured repository matches the request.', 'candidates' => array_values(array_unique($candidates))], 404);
+            return [new JsonResponse(['error' => $message, 'candidates' => $candidates], 404), $message, $candidates, []];
         }
 
-        return $this->start($matched, 'webhook');
+        [$response, $message] = $this->start($matched, 'webhook');
+
+        return [$response, $message, $candidates, $matched];
     }
 
     /**
      * @param list<string> $urls
+     *
+     * @return array{0: JsonResponse, 1: string}
      */
-    private function start(array $urls, string $trigger): JsonResponse
+    private function start(array $urls, string $trigger): array
     {
         try {
             $this->builds->start($urls, $trigger);
         } catch (BuildRunningException $e) {
-            return new JsonResponse(['error' => $e->getMessage(), 'repositories' => $urls], 409);
+            return [new JsonResponse(['error' => $e->getMessage(), 'repositories' => $urls], 409), $e->getMessage()];
         }
         $this->logger->info('Webhook: build started.', ['repositories' => $urls]);
+        $message = [] === $urls ? 'Full build started.' : 'Build started for '.implode(', ', $urls).'.';
 
-        return new JsonResponse(['status' => 'started', 'repositories' => $urls], 202);
+        return [new JsonResponse(['status' => 'started', 'repositories' => $urls], 202), $message];
     }
 
     private function payload(Request $request): mixed

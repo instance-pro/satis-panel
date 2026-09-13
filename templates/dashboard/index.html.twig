@@ -68,6 +68,7 @@
             <p class="mb-2 text-sm text-fg-muted">Register this URL as push webhook (JSON payload) in GitHub, GitLab, Gitea, Bitbucket or Azure DevOps. Only the repository from the payload is rebuilt.</p>
             <pre class="pre">{{ webhook_url }}</pre>
             <p class="mt-2 text-xs text-fg-muted">Manual trigger: <span class="code">curl -X POST "{{ webhook_url }}?url=&lt;repository url&gt;"</span> · full build: <span class="code">curl -X POST "{{ webhook_url }}?full=1"</span></p>
+            <div class="mt-4"><a href="{{ path('app_webhooks') }}" class="btn-secondary btn-sm">Request log</a></div>
         {% else %}
             <p class="text-sm text-attention">WEBHOOK_SECRET is not set, the webhook endpoint is disabled.</p>
         {% endif %}

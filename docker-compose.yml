@@ -50,8 +50,13 @@ services:
       - SSH_KEYSCAN_HOSTS=${SSH_KEYSCAN_HOSTS:-}
       # Composer authentication for HTTPS sources, e.g. {"github-oauth":{"github.com":"ghp_..."}}
       - COMPOSER_AUTH=${COMPOSER_AUTH:-}
+      # Webhook request log (see the redis service below).
+      - REDIS_URL=redis://redis:6379
       - APP_ENV=${APP_ENV:-prod}
       - APP_DEBUG=${APP_DEBUG:-0}
+    depends_on:
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ['CMD', 'curl', '-fsS', '-o', '/dev/null', 'http://127.0.0.1/login']
       interval: 30s
@@ -59,7 +64,21 @@ services:
       retries: 3
       start_period: 30s
 
+  # Redis keeps the webhook request log (last N requests, configurable in the UI).
+  redis:
+    image: 'redis:8-alpine'
+    restart: unless-stopped
+    command: ['redis-server', '--save', '60', '1', '--appendonly', 'yes']
+    volumes:
+      - 'satis-panel-redis:/data'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
 volumes:
+  satis-panel-redis:
   satis-panel-config:
   satis-panel-output:
   satis-panel-var:

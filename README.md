@@ -73,6 +73,7 @@ composer config --global http-basic.satis.example.com <user> <password>
 | `SATIS_AUTH_DISABLED` | `0` | `1` serves the package files without authentication. |
 | `SSH_PRIVATE_KEY` | empty | Import an existing private key on first start instead of using the UI. |
 | `SSH_KEYSCAN_HOSTS` | empty | Space separated `host` or `host:port` entries trusted on start. github.com, gitlab.com and bitbucket.org are built in. |
+| `REDIS_URL` | `redis://redis:6379` in compose | Redis for the webhook request log. Empty disables the log. |
 | `COMPOSER_AUTH` | empty | Composer auth JSON for HTTPS sources, e.g. `{"github-oauth":{"github.com":"ghp_..."}}`. An `auth.json` in the config volume works as well. |
 | `TRUSTED_PROXIES` | private networks | Proxies whose `X-Forwarded-*` headers are trusted. |
 | `APP_ENV` / `APP_DEBUG` | `prod` / `0` | Symfony environment. |
@@ -86,6 +87,7 @@ composer config --global http-basic.satis.example.com <user> <password>
 | `satis-panel-var` | `/var/www/html/var` | Sessions, logs, build state and log |
 | `satis-panel-composer` | `/var/www/.composer` | Composer home and cache |
 | `satis-panel-ssh` | `/var/www/.ssh` | Deploy key, `config`, `known_hosts` |
+| `satis-panel-redis` | `/data` (redis) | Webhook request log |
 
 The entrypoint pins `output-dir` in `satis.json` to `/data/output`, the
 directory nginx serves.
@@ -115,6 +117,14 @@ matched against `satis.json` (scheme, credentials, `.git` and case are ignored) 
 | 409 | a build is already running, retry later |
 
 Manual triggers: `?url=<repository url>` for one repository, `?full=1` for a full build.
+
+### Request log
+
+The last webhook requests are kept in Redis (`redis` service in `docker-compose.yml`)
+and shown under *Webhooks* in the UI: time, source, detected and matched repository
+URLs, the request payload (up to 64 KB) and the response. How many requests are kept can
+be chosen there (default 100, 10 per page). The app reads `REDIS_URL`; without it the
+log is simply off and the webhook still works.
 
 ## Command line
 
