@@ -4,16 +4,16 @@ A small web UI around [composer/satis](https://github.com/composer/satis) for ru
 private Composer repository on [Coolify](https://coolify.io) (or any Docker host).
 Composer package `instance-pro/satis-panel`.
 
-It replaces the upstream [Satisfy](https://github.com/project-satisfy/satisfy) image,
-which is hard to run behind Coolify's proxy (build output lands next to `index.php`,
-basic-auth labels lock out the admin UI and the webhooks, `parameters.yml` is missing).
+It is built for a plain Docker deployment: the build output, the basic auth for the
+package files, the admin UI and the webhooks all live in one container, so no reverse
+proxy labels are needed.
 
 **What the UI does**
 
 * Login for one admin account (`ADMIN_USER` / `ADMIN_PASSWORD`).
 * Repositories: add, edit and remove the entries of `satis.json`.
 * Configuration: name, homepage, require options, stability and the full
-  **archive** block (dist mirroring), which upstream Satisfy has no form for.
+  **archive** block (dist mirroring).
 * Composer users: HTTP basic auth for `packages.json`, metadata and dist files.
   Stored as bcrypt hashes in an htpasswd file that nginx reads on every request; the
   plain passwords are kept in `composer-users.json` (config volume, mode 600) so they
