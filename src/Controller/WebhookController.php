@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Satis\BuildQueue;
 use App\Satis\BuildRunner;
 use App\Satis\BuildRunningException;
 use App\Satis\ConfigException;
@@ -35,6 +36,7 @@ final class WebhookController
         private readonly string $webhookSecret,
         private readonly SatisConfig $config,
         private readonly BuildRunner $builds,
+        private readonly BuildQueue $queue,
         private readonly PayloadParser $parser,
         private readonly RepositoryUrlMatcher $matcher,
         private readonly WebhookLog $log,
@@ -136,15 +138,40 @@ final class WebhookController
      */
     private function start(array $urls, string $trigger): array
     {
+        $label = [] === $urls ? 'Full build' : 'Build for '.implode(', ', $urls);
+
+        if ($this->queue->isEnabled()) {
+            try {
+                $result = $this->queue->enqueue($urls, $trigger);
+            } catch (\Throwable $e) {
+                $this->logger->error('Webhook: cannot queue build, Redis error.', ['exception' => $e]);
+
+                return $this->startDirectly($urls, $trigger, $label);
+            }
+            $message = 'merged' === $result ? $label.' is already queued.' : $label.' queued.';
+            $this->logger->info('Webhook: build queued.', ['repositories' => $urls, 'result' => $result]);
+
+            return [new JsonResponse(['status' => $result, 'repositories' => $urls, 'queue_length' => $this->queue->length()], 202), $message];
+        }
+
+        return $this->startDirectly($urls, $trigger, $label);
+    }
+
+    /**
+     * @param list<string> $urls
+     *
+     * @return array{0: JsonResponse, 1: string}
+     */
+    private function startDirectly(array $urls, string $trigger, string $label): array
+    {
         try {
             $this->builds->start($urls, $trigger);
         } catch (BuildRunningException $e) {
             return [new JsonResponse(['error' => $e->getMessage(), 'repositories' => $urls], 409), $e->getMessage()];
         }
         $this->logger->info('Webhook: build started.', ['repositories' => $urls]);
-        $message = [] === $urls ? 'Full build started.' : 'Build started for '.implode(', ', $urls).'.';
 
-        return [new JsonResponse(['status' => 'started', 'repositories' => $urls], 202), $message];
+        return [new JsonResponse(['status' => 'started', 'repositories' => $urls], 202), $label.' started.'];
     }
 
     private function payload(Request $request): mixed

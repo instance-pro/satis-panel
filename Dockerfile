@@ -24,7 +24,7 @@ FROM php:8.5-fpm
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends nginx git openssh-client unzip curl ca-certificates gettext-base libzip-dev \
+    && apt-get install -y --no-install-recommends nginx git openssh-client unzip curl ca-certificates gettext-base procps libzip-dev \
     && docker-php-ext-install -j"$(nproc)" zip \
     && rm -rf /var/lib/apt/lists/* \
     && rm -f /etc/nginx/sites-enabled/default \
@@ -47,6 +47,7 @@ ENV APP_ENV=prod \
     SSH_DIR=/var/www/.ssh \
     TRUSTED_PROXIES=127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16 \
     DEFAULT_URI=http://localhost \
+    BUILD_TIMEOUT=1800 \
     ADMIN_USER=admin
 
 COPY docker/php/satis-panel.ini /usr/local/etc/php/conf.d/satis-panel.ini

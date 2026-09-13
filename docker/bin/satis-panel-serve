@@ -7,7 +7,18 @@ FPM_PID=$!
 nginx -g 'daemon off;' &
 NGINX_PID=$!
 
+# Build queue worker (only with Redis). Restarted automatically when it exits.
+WORKER_PID=""
+if [ -n "$REDIS_URL" ]; then
+    runuser -u www-data -- bash -c 'cd /var/www/html; while true; do php bin/console app:build:worker --no-interaction --no-ansi; echo "satis-panel-serve: build worker exited, restarting in 3s"; sleep 3; done' &
+    WORKER_PID=$!
+fi
+
 shutdown() {
+    if [ -n "$WORKER_PID" ]; then
+        pkill -TERM -P "$WORKER_PID" 2>/dev/null || true
+        kill -TERM "$WORKER_PID" 2>/dev/null || true
+    fi
     kill -TERM "$FPM_PID" "$NGINX_PID" 2>/dev/null || true
     wait "$FPM_PID" "$NGINX_PID" 2>/dev/null || true
 }

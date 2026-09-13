@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Webhook;
 
+use App\Redis\RedisClientFactory;
 use Predis\Client;
 use Psr\Log\LoggerInterface;
 
@@ -21,17 +22,15 @@ final class WebhookLog
     private const KEY_LOG = 'satis-panel:webhook:log';
     private const KEY_RETENTION = 'satis-panel:webhook:retention';
 
-    private ?Client $client = null;
-
     public function __construct(
-        private readonly string $redisUrl,
+        private readonly RedisClientFactory $redis,
         private readonly LoggerInterface $logger,
     ) {
     }
 
     public function isEnabled(): bool
     {
-        return '' !== trim($this->redisUrl);
+        return $this->redis->isConfigured();
     }
 
     /**
@@ -39,16 +38,7 @@ final class WebhookLog
      */
     public function connectionError(): ?string
     {
-        if (!$this->isEnabled()) {
-            return 'REDIS_URL is not configured.';
-        }
-        try {
-            $this->client()->ping();
-
-            return null;
-        } catch (\Throwable $e) {
-            return $e->getMessage();
-        }
+        return $this->redis->connectionError();
     }
 
     /**
@@ -114,15 +104,6 @@ final class WebhookLog
 
     private function client(): Client
     {
-        if (null === $this->client) {
-            if (!$this->isEnabled()) {
-                throw new \RuntimeException('REDIS_URL is not configured.');
-            }
-            // redis://:@host (empty password from an unset variable) means no authentication
-            $url = (string) preg_replace('#^([a-z]+://):@#', '$1', trim($this->redisUrl));
-            $this->client = new Client($url, ['exceptions' => true]);
-        }
-
-        return $this->client;
+        return $this->redis->client();
     }
 }

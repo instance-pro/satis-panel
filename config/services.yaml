@@ -26,6 +26,7 @@ services:
             string $webhookSecret: '%env(WEBHOOK_SECRET)%'
             bool $satisAuthDisabled: '%env(bool:SATIS_AUTH_DISABLED)%'
             string $redisUrl: '%env(REDIS_URL)%'
+            int $buildTimeout: '%env(int:BUILD_TIMEOUT)%'
 
     App\:
         resource: '../src/'

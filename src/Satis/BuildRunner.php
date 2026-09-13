@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Satis;
 
+use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Symfony\Component\Process\PhpExecutableFinder;
 use Symfony\Component\Process\Process;
 
@@ -26,6 +27,7 @@ final class BuildRunner
         private readonly string $satisBin,
         private readonly string $projectDir,
         private readonly SatisConfig $config,
+        private readonly int $buildTimeout,
     ) {
     }
 
@@ -128,9 +130,12 @@ final class BuildRunner
         try {
             $command = $this->command($repositoryUrls);
             $write('$ '.implode(' ', array_map(static fn (string $a): string => str_contains($a, ' ') ? escapeshellarg($a) : $a, $command))."\n");
-            $process = new Process($command, $this->projectDir, null, null, null);
+            $process = new Process($command, $this->projectDir, null, null, $this->buildTimeout > 0 ? (float) $this->buildTimeout : null);
             $exitCode = $process->run(static fn (string $type, string $buffer) => $write($buffer));
             $write(sprintf("\n[build %s with exit code %d]\n", 0 === $exitCode ? 'finished' : 'failed', $exitCode));
+        } catch (ProcessTimedOutException $e) {
+            $exitCode = 124;
+            $write(sprintf("\n[build aborted: no result after %d seconds (BUILD_TIMEOUT)]\n", $this->buildTimeout));
         } catch (\Throwable $e) {
             $exitCode = 1;
             $write("\n[build crashed: ".$e->getMessage()."]\n");

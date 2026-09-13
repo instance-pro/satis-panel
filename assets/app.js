@@ -97,6 +97,45 @@ if (buildPanel) {
     });
   };
 
+  const queuePanel = document.querySelector("[data-queue-panel]");
+  const renderQueue = (queue) => {
+    if (!queuePanel || !queue || !queue.enabled || queue.error) return;
+    const badge = queuePanel.querySelector("[data-worker-badge]");
+    const meta = queuePanel.querySelector("[data-worker-meta]");
+    if (badge) {
+      const alive = queue.worker && queue.worker.alive;
+      badge.className = alive ? "badge-green" : "badge-red";
+      badge.textContent = alive ? `worker ${queue.worker.state}` : "worker not running";
+    }
+    if (meta) meta.textContent = queue.worker ? `last seen ${queue.worker.seen_at} UTC` : "";
+    const list = queuePanel.querySelector("[data-queue-list]");
+    if (!list) return;
+    list.replaceChildren();
+    if (queue.entries.length === 0) {
+      const li = document.createElement("li");
+      li.className = "py-2 text-fg-muted";
+      li.textContent = "Nothing waiting.";
+      list.appendChild(li);
+      return;
+    }
+    queue.entries.forEach((entry) => {
+      const li = document.createElement("li");
+      li.className = "flex flex-wrap items-center gap-3 py-2";
+      const badge = document.createElement("span");
+      badge.className = "badge-amber";
+      badge.textContent = "waiting";
+      const repos = document.createElement("span");
+      repos.className = "font-mono text-xs";
+      repos.textContent = entry.repositories.length ? entry.repositories.join(", ") : "full build";
+      const info = document.createElement("span");
+      info.className = "text-xs text-fg-muted";
+      info.textContent = `queued ${entry.queued_at.replace("T", " ").slice(0, 19)} by ${entry.trigger}`;
+      li.append(badge, repos, info);
+      list.appendChild(li);
+    });
+  };
+
+  const queueEnabled = buildPanel.dataset.queueEnabled === "1";
   let wasRunning = buildPanel.dataset.buildRunning === "1";
   const poll = async () => {
     try {
@@ -104,17 +143,22 @@ if (buildPanel) {
       if (!response.ok) return;
       const status = await response.json();
       render(status);
-      if (status.running) {
+      renderQueue(status.queue);
+      const waiting = status.queue && status.queue.enabled && status.queue.entries.length > 0;
+      if (status.running || waiting) {
         wasRunning = true;
         setTimeout(poll, 2000);
       } else if (wasRunning) {
         wasRunning = false;
+        setTimeout(poll, 5000);
+      } else if (queueEnabled) {
+        setTimeout(poll, 10000);
       }
     } catch (error) {
       setTimeout(poll, 5000);
     }
   };
-  if (wasRunning) poll();
+  if (wasRunning || queueEnabled) poll();
 }
 
 // Stateless CSRF protection (double submit cookie), same logic as Symfony's

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Satis\BuildQueue;
 use App\Satis\BuildRunner;
 use App\Satis\BuildRunningException;
 use App\Satis\SatisConfig;
@@ -18,6 +19,7 @@ final class BuildController extends AbstractController
 {
     public function __construct(
         private readonly BuildRunner $builds,
+        private readonly BuildQueue $queue,
         private readonly SatisConfig $config,
     ) {
     }
@@ -32,6 +34,7 @@ final class BuildController extends AbstractController
             'log' => $this->builds->log(),
             'command' => implode(' ', $this->builds->command()),
             'repositories' => $this->config->repositories(),
+            'queue' => $this->queueInfo(),
         ]);
     }
 
@@ -43,9 +46,20 @@ final class BuildController extends AbstractController
         }
         $repositoryUrl = trim((string) $request->request->get('repository_url', ''));
         $urls = '' !== $repositoryUrl ? [$repositoryUrl] : [];
+        $label = [] === $urls ? 'Full build' : sprintf('Build of %s', $repositoryUrl);
+        if ($this->queue->isEnabled()) {
+            try {
+                $result = $this->queue->enqueue($urls, 'ui');
+                $this->addFlash('success', 'merged' === $result ? $label.' is already queued.' : $label.' queued.');
+
+                return $this->redirectToRoute('app_build');
+            } catch (\Throwable $e) {
+                $this->addFlash('warning', 'Queue not available ('.$e->getMessage().'), starting directly.');
+            }
+        }
         try {
             $this->builds->start($urls, 'ui');
-            $this->addFlash('success', [] === $urls ? 'Full build started.' : sprintf('Build of %s started.', $repositoryUrl));
+            $this->addFlash('success', $label.' started.');
         } catch (BuildRunningException $e) {
             $this->addFlash('error', $e->getMessage());
         }
@@ -66,6 +80,29 @@ final class BuildController extends AbstractController
             'meta' => $status->meta(),
             'exit_code' => $status->exitCode,
             'log' => $this->builds->log(),
+            'queue' => $this->queueInfo(),
         ]);
+    }
+
+    /**
+     * @return array{enabled: bool, error: ?string, entries: list<array{repositories: list<string>, trigger: string, queued_at: string}>, worker: ?array{seen_at: string, state: string, alive: bool}}
+     */
+    private function queueInfo(): array
+    {
+        $info = ['enabled' => $this->queue->isEnabled(), 'error' => null, 'entries' => [], 'worker' => null];
+        if (!$this->queue->isEnabled()) {
+            return $info;
+        }
+        try {
+            $info['entries'] = $this->queue->entries();
+            $worker = $this->queue->worker();
+            if (null !== $worker) {
+                $info['worker'] = ['seen_at' => $worker['seen_at']->format('Y-m-d H:i:s'), 'state' => $worker['state'], 'alive' => $worker['alive']];
+            }
+        } catch (\Throwable $e) {
+            $info['error'] = $e->getMessage();
+        }
+
+        return $info;
     }
 }

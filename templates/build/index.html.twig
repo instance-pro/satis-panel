@@ -4,7 +4,7 @@
 {% block heading %}Build{% endblock %}
 
 {% block content %}
-<div class="card" data-build-status-url="{{ path('app_build_status') }}" data-build-running="{{ status.running ? '1' : '0' }}">
+<div class="card" data-build-status-url="{{ path('app_build_status') }}" data-build-running="{{ status.running ? '1' : '0' }}" data-queue-enabled="{{ queue.enabled ? '1' : '0' }}">
     <div class="mb-4 flex flex-wrap items-center gap-3">
         <span data-build-state class="{{ status.badgeClass }}">{{ status.label }}</span>
         <span data-build-meta class="text-xs text-fg-muted">{{ status.meta }}</span>
@@ -31,5 +31,33 @@
     </div>
     <p class="mb-2 text-xs text-fg-muted">Command: <span class="code">{{ command }}</span></p>
     <pre class="pre" data-build-log>{{ log is empty ? '(no output yet)' : log }}</pre>
+</div>
+
+<div class="card mt-6" data-queue-panel>
+    <div class="mb-3 flex flex-wrap items-center gap-3">
+        <h2 class="text-base font-semibold">Queue</h2>
+        {% if not queue.enabled %}
+            <span class="badge-slate">off</span>
+        {% elseif queue.error %}
+            <span class="badge-red">Redis error</span>
+        {% else %}
+            <span data-worker-badge class="{{ queue.worker and queue.worker.alive ? 'badge-green' : 'badge-red' }}">{{ queue.worker and queue.worker.alive ? 'worker ' ~ queue.worker.state : 'worker not running' }}</span>
+            <span data-worker-meta class="text-xs text-fg-muted">{{ queue.worker ? 'last seen ' ~ queue.worker.seen_at ~ ' UTC' : '' }}</span>
+        {% endif %}
+    </div>
+    {% if not queue.enabled %}
+        <p class="text-sm text-fg-muted">Set <span class="code">REDIS_URL</span> to queue builds. Without it, webhooks and the buttons above start builds directly and answer 409 while one is running.</p>
+    {% elseif queue.error %}
+        <p class="text-sm text-danger">{{ queue.error }}</p>
+    {% else %}
+        <p class="mb-3 text-sm text-fg-muted">Builds from webhooks, the buttons above and <span class="code">satis-panel-build --queue</span> are processed one after another by the worker. Equivalent jobs are merged, a full build replaces waiting partial builds.</p>
+        <ul data-queue-list class="divide-y divide-line text-sm">
+            {% for entry in queue.entries %}
+                <li class="flex flex-wrap items-center gap-3 py-2"><span class="badge-amber">waiting</span><span class="font-mono text-xs">{{ entry.repositories is empty ? 'full build' : entry.repositories|join(', ') }}</span><span class="text-xs text-fg-muted">queued {{ entry.queued_at|date('Y-m-d H:i:s') }} by {{ entry.trigger }}</span></li>
+            {% else %}
+                <li class="py-2 text-fg-muted" data-queue-empty>Nothing waiting.</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
 </div>
 {% endblock %}
