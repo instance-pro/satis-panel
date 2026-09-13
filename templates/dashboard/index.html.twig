@@ -58,7 +58,7 @@
             <pre class="pre flex-1" data-snippet>composer config http-basic.{{ repo_host }} &lt;user&gt; &lt;password&gt;</pre>
             <button type="button" class="btn-secondary btn-sm" data-copy>Copy</button>
         </div>
-        <p class="mb-3 text-xs text-fg-muted">Writes <span class="code">auth.json</span> next to composer.json, keep it out of git. Add <span class="code">--global</span> to store it in the Composer home of the user instead; containers such as ddev lose that on restart.</p>
+        <p class="mb-3 text-xs text-fg-muted">Writes <span class="code">auth.json</span> next to composer.json, keep it out of git. Add <span class="code">--global</span> to store it in the Composer home of the user instead; containers such as ddev lose that on restart. With an access token use <span class="code">composer config bearer.{{ repo_host }} &lt;token&gt;</span> instead.</p>
         <details class="text-xs text-fg-muted">
             <summary class="cursor-pointer">Or add it to composer.json by hand</summary>
             <pre class="pre mt-2">{
@@ -67,7 +67,7 @@
     ]
 }</pre>
         </details>
-        <div class="mt-4"><a href="{{ path('app_users') }}" class="btn-secondary btn-sm">Composer users</a></div>
+        <div class="mt-4"><a href="{{ path('app_users') }}" class="btn-secondary btn-sm">Composer access</a></div>
     </div>
 
     <div class="card">

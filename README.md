@@ -14,10 +14,11 @@ proxy labels are needed.
 * Repositories: add, edit and remove the entries of `satis.json`.
 * Configuration: name, homepage, require options, stability and the full
   **archive** block (dist mirroring).
-* Composer users: HTTP basic auth for `packages.json`, metadata and dist files.
-  Stored as bcrypt hashes in an htpasswd file that nginx reads on every request; the
-  plain passwords are kept in `composer-users.json` (config volume, mode 600) so they
-  can be shown and copied in the UI together with the `composer config` command.
+* Composer access: users (HTTP basic auth) and access tokens (`Authorization: Bearer`)
+  for `packages.json`, metadata and dist files. Users are stored as bcrypt hashes in an
+  htpasswd file that nginx reads on every request, tokens in `tokens.json`; the plain
+  values are kept in the config volume (mode 600) so they can be shown and copied in
+  the UI together with the matching `composer config` command.
 * SSH: generate or import a deploy key, show the public key to register at
   Bitbucket/GitHub/GitLab, manage `known_hosts` for self-hosted servers.
 * Build: run `satis build` (full or per repository) in the background with live log.
@@ -62,7 +63,13 @@ Composer clients:
 composer config http-basic.satis.example.com <user> <password>
 ```
 
-This writes `auth.json` next to the project's `composer.json` (keep it out of git).
+or, with an access token instead of a user:
+
+```
+composer config bearer.satis.example.com <token>
+```
+
+Both write `auth.json` next to the project's `composer.json` (keep it out of git).
 With `--global` the credentials go to the Composer home of the user instead, which
 containers such as ddev lose on restart.
 
@@ -90,7 +97,7 @@ containers such as ddev lose on restart.
 
 | Volume | Path | Content |
 |---|---|---|
-| `satis-panel-config` | `/data/config` | `satis.json`, `htpasswd`, `composer-users.json`, `webhooks.json`, optional `auth.json`, generated secrets |
+| `satis-panel-config` | `/data/config` | `satis.json`, `htpasswd`, `composer-users.json`, `tokens.json`, `webhooks.json`, optional `auth.json`, generated secrets |
 | `satis-panel-output` | `/data/output` | Satis build output (`packages.json`, `p2/`, `include/`, `dist/`, `index.html`) |
 | `satis-panel-var` | `/var/www/html/var` | Sessions, logs, build state and log |
 | `satis-panel-composer` | `/var/www/.composer` | Composer home and cache |

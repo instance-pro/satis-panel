@@ -37,13 +37,20 @@ server {
         try_files $uri =404;
     }
 
-    # Session check for the package files: logged-in admins may browse the
-    # package index without a Composer user (see the satis-auth snippet).
-    # Without a session cookie the answer is 401 right away, so Composer
-    # clients never trigger a PHP subrequest.
+    # Token/session check for the package files (see the satis-auth snippet):
+    # Composer access tokens (Authorization: Bearer) and logged-in admin
+    # sessions are verified by the app. Anything else is answered 401 right
+    # away, so basic auth requests never trigger a PHP subrequest.
     location = /_auth/session {
         internal;
-        if ($cookie_satis_panel_session = "") {
+        set $delegate "";
+        if ($cookie_satis_panel_session != "") {
+            set $delegate 1;
+        }
+        if ($http_authorization ~* "^Bearer ") {
+            set $delegate 1;
+        }
+        if ($delegate = "") {
             return 401;
         }
         include fastcgi_params;

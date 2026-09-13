@@ -1,7 +1,7 @@
 {% extends 'layout.html.twig' %}
 
-{% block title %}Composer users · {{ app_name }}{% endblock %}
-{% block heading %}Composer users{% endblock %}
+{% block title %}Composer access · {{ app_name }}{% endblock %}
+{% block heading %}Composer access{% endblock %}
 
 {% block content %}
 {% if auth_disabled %}
@@ -71,6 +71,58 @@
             </div>
             <button type="submit" class="btn-primary" data-user-form-submit>Save</button>
         {{ form_end(form) }}
+    </div>
+</div>
+
+<h2 id="tokens" class="mb-4 mt-10 text-xl font-semibold">Access tokens</h2>
+<div class="grid gap-6 lg:grid-cols-3">
+    <div class="card lg:col-span-2">
+        <p class="mb-4 text-sm text-fg-muted">Tokens work like users without a name: Composer sends them as <span class="code">Authorization: Bearer</span>. Handy for CI pipelines and when you prefer one token per machine. Stored in <span class="code">tokens.json</span> in the config volume.</p>
+        <div class="flash-info">Store a token in the project with <span class="code">composer config bearer.{{ host }} &lt;token&gt;</span> (writes <span class="code">auth.json</span>, keep it out of git) or with <span class="code">--global</span> for the whole machine.</div>
+        {% if tokens is empty %}
+            <p class="text-sm text-fg-muted">No tokens yet.</p>
+        {% else %}
+            <table class="table">
+                <thead><tr><th>Name</th><th>Token</th><th>Created</th><th>Last used</th><th></th></tr></thead>
+                {% for token in tokens %}
+                <tbody data-user-row class="border-t border-line">
+                    <tr>
+                        <td class="whitespace-nowrap">{{ token.name }}</td>
+                        <td>
+                            <div class="flex items-center gap-2">
+                                <code class="code-box" data-secret="{{ token.token }}">{{ token.token|slice(0, 10) }}••••</code>
+                                <button type="button" class="btn-secondary btn-sm" data-reveal>Show</button>
+                                <button type="button" class="btn-secondary btn-sm" data-copy data-copy-value="{{ token.token }}">Copy</button>
+                            </div>
+                        </td>
+                        <td class="whitespace-nowrap text-xs text-fg-muted">{{ token.created_at ? token.created_at|date('Y-m-d H:i') : '' }}</td>
+                        <td class="whitespace-nowrap text-xs text-fg-muted">{{ token.last_used_at ? token.last_used_at|date('Y-m-d H:i') : 'never' }}</td>
+                        <td>
+                            <form method="post" action="{{ path('app_token_delete', {id: token.id}) }}" class="flex justify-end" data-confirm="Remove token {{ token.name }}?">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete-token-' ~ token.id) }}">
+                                <button type="submit" class="btn-danger btn-sm">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" class="pt-0 pb-3">
+                            <div class="flex items-center gap-2">
+                                <code class="code-box flex-1 overflow-x-auto whitespace-nowrap" data-secret="composer config bearer.{{ host }} {{ token.token }}">composer config bearer.{{ host }} {{ token.token|slice(0, 10) }}••••</code>
+                                <button type="button" class="btn-secondary btn-sm shrink-0" data-copy data-copy-value="composer config bearer.{{ host }} {{ token.token }}">Copy</button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+                {% endfor %}
+            </table>
+        {% endif %}
+    </div>
+    <div class="card">
+        <h2 class="mb-4 text-base font-semibold">Create token</h2>
+        {{ form_start(token_form) }}
+            {{ form_widget(token_form) }}
+            <button type="submit" class="btn-primary">Generate token</button>
+        {{ form_end(token_form) }}
     </div>
 </div>
 {% endblock %}
