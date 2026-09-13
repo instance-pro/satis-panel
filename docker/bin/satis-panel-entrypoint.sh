@@ -16,7 +16,7 @@ gen_secret() {
     if [ ! -s "$file" ]; then
         head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' > "$file"
         chmod 600 "$file"
-        log "generated $2, stored in $file"
+        log "generated $2, stored in $file" >&2
     fi
     cat "$file"
 }
