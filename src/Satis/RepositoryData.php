@@ -37,6 +37,10 @@ final class RepositoryData
     /** Composer repositories only: skip API and use the raw git URL for VCS repositories. */
     public bool $noApi = false;
 
+    /** Stored in webhooks.json, not in satis.json. */
+    #[Assert\Length(min: 8, max: 200)]
+    public ?string $webhookSecret = null;
+
     /**
      * @return list<string>
      */

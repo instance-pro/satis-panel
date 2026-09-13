@@ -18,7 +18,7 @@ final class RequestSummary
      *
      * @return array<string, mixed>
      */
-    public static function build(Request $request, JsonResponse $response, string $message, array $candidates, array $matched, bool $authorized): array
+    public static function build(Request $request, JsonResponse $response, string $message, array $candidates, array $matched, bool $authorized, string $signature = 'not configured'): array
     {
         $body = $request->getContent();
         $truncated = strlen($body) > WebhookLog::MAX_PAYLOAD_BYTES;
@@ -29,7 +29,7 @@ final class RequestSummary
         $responseBody = json_decode((string) $response->getContent(), true);
 
         $headers = [];
-        foreach (['content-type', 'user-agent', 'x-github-event', 'x-github-delivery', 'x-gitlab-event', 'x-gitea-event', 'x-event-key', 'x-request-uuid', 'x-hook-uuid'] as $name) {
+        foreach (['content-type', 'user-agent', 'x-github-event', 'x-github-delivery', 'x-gitlab-event', 'x-gitea-event', 'x-event-key', 'x-request-uuid', 'x-hook-uuid', 'x-hub-signature', 'x-hub-signature-256', 'x-gitea-signature'] as $name) {
             if ($request->headers->has($name)) {
                 $headers[$name] = (string) $request->headers->get($name);
             }
@@ -43,6 +43,7 @@ final class RequestSummary
             'query' => $request->getQueryString(),
             'headers' => $headers,
             'authorized' => $authorized,
+            'signature' => $signature,
             'status' => $response->getStatusCode(),
             'message' => $message,
             'response' => is_array($responseBody) ? $responseBody : (string) $response->getContent(),

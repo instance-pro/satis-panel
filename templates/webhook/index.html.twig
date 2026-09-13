@@ -64,6 +64,8 @@
                             </td>
                             <td>
                                 <span class="{{ badge }}">{{ status }}</span>
+                                {% set sig = entry.signature|default('not configured') %}
+                                {% if sig == 'valid' %}<span class="badge-green">signed</span>{% elseif sig == 'invalid' %}<span class="badge-red">bad signature</span>{% elseif sig == 'missing' %}<span class="badge-red">unsigned</span>{% endif %}
                                 <div class="mt-1 max-w-xs text-xs text-fg-muted">{{ entry.message|default('') }}</div>
                             </td>
                             <td class="font-mono text-xs">

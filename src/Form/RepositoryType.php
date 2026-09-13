@@ -33,6 +33,12 @@ final class RepositoryType extends AbstractType
             ->add('noApi', CheckboxType::class, [
                 'required' => false,
                 'label' => 'Do not use the provider API (no-api), clone via git instead',
+            ])
+            ->add('webhookSecret', TextType::class, [
+                'required' => false,
+                'label' => 'Webhook secret (optional)',
+                'attr' => ['autocomplete' => 'off', 'spellcheck' => 'false', 'class' => 'font-mono', 'data-secret-input' => ''],
+                'help' => 'Enter the same value as webhook secret at Bitbucket, GitHub, Gitea or GitLab. Requests for this repository are then only accepted with a valid signature.',
             ]);
     }
 

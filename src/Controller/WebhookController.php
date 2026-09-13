@@ -11,7 +11,9 @@ use App\Satis\RepositoryUrlMatcher;
 use App\Satis\SatisConfig;
 use App\Webhook\PayloadParser;
 use App\Webhook\RequestSummary;
+use App\Webhook\SignatureVerifier;
 use App\Webhook\WebhookLog;
+use App\Webhook\WebhookSecrets;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -36,6 +38,8 @@ final class WebhookController
         private readonly PayloadParser $parser,
         private readonly RepositoryUrlMatcher $matcher,
         private readonly WebhookLog $log,
+        private readonly WebhookSecrets $secrets,
+        private readonly SignatureVerifier $signatures,
         private readonly LoggerInterface $logger,
     ) {
     }
@@ -46,34 +50,35 @@ final class WebhookController
         $authorized = '' !== $this->webhookSecret && hash_equals($this->webhookSecret, $token);
         $candidates = [];
         $matched = [];
+        $signature = 'not configured';
 
         if (!$authorized) {
             $response = new JsonResponse(['error' => 'Not found.'], 404);
             $message = 'Invalid webhook secret.';
         } else {
-            [$response, $message, $candidates, $matched] = $this->handle($request);
+            [$response, $message, $candidates, $matched, $signature] = $this->handle($request);
         }
 
-        $this->log->record(RequestSummary::build($request, $response, $message, $candidates, $matched, $authorized));
+        $this->log->record(RequestSummary::build($request, $response, $message, $candidates, $matched, $authorized, $signature));
 
         return $response;
     }
 
     /**
-     * @return array{0: JsonResponse, 1: string, 2: list<string>, 3: list<string>}
+     * @return array{0: JsonResponse, 1: string, 2: list<string>, 3: list<string>, 4: string}
      */
     private function handle(Request $request): array
     {
         try {
             $repositories = $this->config->repositories();
         } catch (ConfigException $e) {
-            return [new JsonResponse(['error' => $e->getMessage()], 500), $e->getMessage(), [], []];
+            return [new JsonResponse(['error' => $e->getMessage()], 500), $e->getMessage(), [], [], 'not configured'];
         }
 
         if ($request->query->getBoolean('full')) {
             [$response, $message] = $this->start([], 'webhook (full)');
 
-            return [$response, $message, [], []];
+            return [$response, $message, [], [], 'not configured'];
         }
 
         $candidates = [];
@@ -90,7 +95,7 @@ final class WebhookController
         if ([] === $candidates) {
             $message = 'No repository URL found in the request. Send a JSON push payload or pass ?url=<repository url>.';
 
-            return [new JsonResponse(['error' => $message], 400), $message, [], []];
+            return [new JsonResponse(['error' => $message], 400), $message, [], [], 'not configured'];
         }
 
         $matched = $this->matcher->match($repositories, $candidates);
@@ -98,12 +103,30 @@ final class WebhookController
             $this->logger->info('Webhook: no configured repository matches.', ['candidates' => $candidates]);
             $message = 'No configured repository matches the request.';
 
-            return [new JsonResponse(['error' => $message, 'candidates' => $candidates], 404), $message, $candidates, []];
+            return [new JsonResponse(['error' => $message, 'candidates' => $candidates], 404), $message, $candidates, [], 'not configured'];
+        }
+
+        // Repositories with a secret only accept requests carrying a valid provider signature.
+        $signature = 'not configured';
+        foreach ($matched as $url) {
+            $secret = $this->secrets->get($url);
+            if (null === $secret) {
+                continue;
+            }
+            $signature = $this->signatures->verify($request, $secret);
+            if (SignatureVerifier::VALID !== $signature) {
+                $this->logger->warning('Webhook: signature check failed.', ['repository' => $url, 'result' => $signature]);
+                $message = SignatureVerifier::MISSING === $signature
+                    ? sprintf('Repository %s requires a signed request (X-Hub-Signature, X-Hub-Signature-256, X-Gitea-Signature or X-Gitlab-Token).', $url)
+                    : sprintf('Invalid signature for repository %s.', $url);
+
+                return [new JsonResponse(['error' => $message, 'repositories' => $matched], 403), $message, $candidates, $matched, $signature];
+            }
         }
 
         [$response, $message] = $this->start($matched, 'webhook');
 
-        return [$response, $message, $candidates, $matched];
+        return [$response, $message, $candidates, $matched, $signature];
     }
 
     /**

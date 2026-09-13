@@ -15,7 +15,7 @@
                     <tbody class="divide-y divide-line">
                     {% for index, repository in repositories %}
                         <tr>
-                            <td><span class="badge-slate">{{ repository.type|default('?') }}</span>{% if repository['no-api']|default(false) %} <span class="badge-slate">no-api</span>{% endif %}</td>
+                            <td><span class="badge-slate">{{ repository.type|default('?') }}</span>{% if repository['no-api']|default(false) %} <span class="badge-slate">no-api</span>{% endif %}{% if signed[index]|default(false) %} <span class="badge-green" title="Webhook requests must be signed">signed</span>{% endif %}</td>
                             <td class="break-all font-mono text-xs">{{ repository.url|default('') }}</td>
                             <td>{{ repository.name|default('') }}</td>
                             <td class="whitespace-nowrap text-right">
@@ -35,7 +35,19 @@
     <div class="card">
         <h2 class="mb-4 text-base font-semibold">Add repository</h2>
         {{ form_start(form) }}
-            {{ form_widget(form) }}
+            {{ form_row(form.type) }}
+            {{ form_row(form.url) }}
+            {{ form_row(form.name) }}
+            {{ form_row(form.noApi) }}
+            <div class="mb-4">
+                {{ form_label(form.webhookSecret) }}
+                <div class="flex gap-2">
+                    {{ form_widget(form.webhookSecret) }}
+                    <button type="button" class="btn-secondary shrink-0" data-generate-secret>Generate</button>
+                </div>
+                {{ form_help(form.webhookSecret) }}
+                {{ form_errors(form.webhookSecret) }}
+            </div>
             <button type="submit" class="btn-primary">Add</button>
         {{ form_end(form) }}
     </div>

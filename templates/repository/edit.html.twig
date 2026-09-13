@@ -7,7 +7,19 @@
 {% block content %}
 <div class="card max-w-2xl">
     {{ form_start(form) }}
-        {{ form_widget(form) }}
+        {{ form_row(form.type) }}
+        {{ form_row(form.url) }}
+        {{ form_row(form.name) }}
+        {{ form_row(form.noApi) }}
+        <div class="mb-4">
+            {{ form_label(form.webhookSecret) }}
+            <div class="flex gap-2">
+                {{ form_widget(form.webhookSecret) }}
+                <button type="button" class="btn-secondary shrink-0" data-generate-secret>Generate</button>
+            </div>
+            {{ form_help(form.webhookSecret) }}
+            {{ form_errors(form.webhookSecret) }}
+        </div>
         <div class="flex gap-2">
             <button type="submit" class="btn-primary">Save</button>
             <a href="{{ path('app_repositories') }}" class="btn-secondary">Cancel</a>

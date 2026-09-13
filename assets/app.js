@@ -10,6 +10,17 @@ document.addEventListener("submit", (event) => {
   }
 });
 
+// Repository form: fill the webhook secret with a random value.
+document.querySelectorAll("[data-generate-secret]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const input = button.closest("form")?.querySelector("[data-secret-input]");
+    if (!input) return;
+    const bytes = window.crypto.getRandomValues(new Uint8Array(24));
+    input.value = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+});
+
 // Build page: poll the status endpoint while a build is running.
 const buildPanel = document.querySelector("[data-build-status-url]");
 if (buildPanel) {

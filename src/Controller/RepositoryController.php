@@ -7,7 +7,9 @@ namespace App\Controller;
 use App\Form\RepositoryType;
 use App\Satis\ConfigException;
 use App\Satis\RepositoryData;
+use App\Satis\RepositoryUrlMatcher;
 use App\Satis\SatisConfig;
+use App\Webhook\WebhookSecrets;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,8 +18,10 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/admin/repositories')]
 final class RepositoryController extends AbstractController
 {
-    public function __construct(private readonly SatisConfig $config)
-    {
+    public function __construct(
+        private readonly SatisConfig $config,
+        private readonly WebhookSecrets $secrets,
+    ) {
     }
 
     #[Route('', name: 'app_repositories', methods: ['GET', 'POST'])]
@@ -35,14 +39,20 @@ final class RepositoryController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             /** @var RepositoryData $data */
             $data = $form->getData();
-            $config['repositories'][] = $data->applyTo();
+            $repository = $data->applyTo();
+            $config['repositories'][] = $repository;
             if ($this->save($config, 'Repository added.')) {
+                $this->secrets->set($repository['url'], $data->webhookSecret);
+
                 return $this->redirectToRoute('app_repositories');
             }
         }
 
+        $signed = $this->secrets->configured();
+
         return $this->render('repository/index.html.twig', [
             'repositories' => $config['repositories'],
+            'signed' => array_map(static fn (array $r): bool => isset($signed[RepositoryUrlMatcher::normalize((string) ($r['url'] ?? ''))]), $config['repositories']),
             'form' => $form,
         ]);
     }
@@ -55,13 +65,20 @@ final class RepositoryController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        $form = $this->createForm(RepositoryType::class, RepositoryData::fromArray($config['repositories'][$index]));
+        $oldUrl = (string) ($config['repositories'][$index]['url'] ?? '');
+        $data = RepositoryData::fromArray($config['repositories'][$index]);
+        $data->webhookSecret = $this->secrets->get($oldUrl);
+        $form = $this->createForm(RepositoryType::class, $data);
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
             /** @var RepositoryData $data */
             $data = $form->getData();
-            $config['repositories'][$index] = $data->applyTo($config['repositories'][$index]);
+            $repository = $data->applyTo($config['repositories'][$index]);
+            $config['repositories'][$index] = $repository;
             if ($this->save($config, 'Repository updated.')) {
+                $this->secrets->rename($oldUrl, $repository['url']);
+                $this->secrets->set($repository['url'], $data->webhookSecret);
+
                 return $this->redirectToRoute('app_repositories');
             }
         }
@@ -81,8 +98,11 @@ final class RepositoryController extends AbstractController
         }
         $config = $this->config->load();
         if (isset($config['repositories'][$index])) {
+            $url = (string) ($config['repositories'][$index]['url'] ?? '');
             unset($config['repositories'][$index]);
-            $this->save($config, 'Repository removed.');
+            if ($this->save($config, 'Repository removed.') && '' !== $url) {
+                $this->secrets->remove($url);
+            }
         }
 
         return $this->redirectToRoute('app_repositories');
