@@ -125,4 +125,40 @@
         {{ form_end(token_form) }}
     </div>
 </div>
+
+<h2 id="ips" class="mt-10 mb-4 text-lg font-semibold">IP allow list</h2>
+<div class="grid gap-6 lg:grid-cols-3">
+    <div class="card lg:col-span-2">
+        <p class="mb-4 text-sm text-fg-muted">Requests from these addresses get <span class="code">packages.json</span>, the metadata and the dist archives without any credentials, for example from an office network or fixed CI runners. Everyone else still needs a user or token. nginx checks the client address behind the proxy (<span class="code">X-Forwarded-For</span> from <span class="code">TRUSTED_PROXIES</span>); your current address is <span class="code">{{ client_ip ?? 'unknown' }}</span>.</p>
+        {% if ips is empty %}
+            <p class="text-sm text-fg-muted">No addresses on the list.</p>
+        {% else %}
+            <table class="table">
+                <thead><tr><th>Address</th><th>Label</th><th>Added</th><th></th></tr></thead>
+                <tbody>
+                {% for entry in ips %}
+                    <tr class="border-t border-line">
+                        <td class="font-mono whitespace-nowrap">{{ entry.ip }}</td>
+                        <td>{{ entry.label }}</td>
+                        <td class="whitespace-nowrap text-xs text-fg-muted">{{ entry.created_at ? entry.created_at|date('Y-m-d H:i') : '' }}</td>
+                        <td>
+                            <form method="post" action="{{ path('app_ip_delete', {id: entry.id}) }}" class="flex justify-end" data-confirm="Remove {{ entry.ip }} from the allow list?">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete-ip-' ~ entry.id) }}">
+                                <button type="submit" class="btn-danger btn-sm">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+    <div class="card">
+        <h2 class="mb-4 text-base font-semibold">Allow address</h2>
+        {{ form_start(ip_form) }}
+            {{ form_widget(ip_form) }}
+            <button type="submit" class="btn-primary">Add to allow list</button>
+        {{ form_end(ip_form) }}
+    </div>
+</div>
 {% endblock %}

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Auth\HtpasswdManager;
+use App\Auth\IpAllowList;
 use App\Auth\TokenManager;
 use App\Form\HtpasswdUserType;
+use App\Form\IpAllowType;
 use App\Form\TokenType;
 use App\Satis\ConfigException;
 use App\Satis\SatisConfig;
@@ -21,6 +23,7 @@ final class UserController extends AbstractController
     public function __construct(
         private readonly HtpasswdManager $htpasswd,
         private readonly TokenManager $tokens,
+        private readonly IpAllowList $ips,
         private readonly SatisConfig $config,
         private readonly bool $satisAuthDisabled,
     ) {
@@ -39,6 +42,21 @@ final class UserController extends AbstractController
                 $this->addFlash('success', sprintf('Token "%s" created.', $token['name']));
 
                 return $this->redirectToRoute('app_users', ['_fragment' => 'tokens']);
+            } catch (\RuntimeException|\InvalidArgumentException $e) {
+                $this->addFlash('error', $e->getMessage());
+            }
+        }
+
+        $ipForm = $this->createForm(IpAllowType::class);
+        $ipForm->handleRequest($request);
+        if ($ipForm->isSubmitted() && $ipForm->isValid()) {
+            /** @var array{ip: string, label: ?string} $data */
+            $data = $ipForm->getData();
+            try {
+                $entry = $this->ips->add($data['ip'], (string) ($data['label'] ?? ''));
+                $this->addFlash('success', sprintf('%s added to the allow list, nginx picks it up within a few seconds.', $entry['ip']));
+
+                return $this->redirectToRoute('app_users', ['_fragment' => 'ips']);
             } catch (\RuntimeException|\InvalidArgumentException $e) {
                 $this->addFlash('error', $e->getMessage());
             }
@@ -76,6 +94,9 @@ final class UserController extends AbstractController
             'users' => $users,
             'tokens' => $this->tokens->all(),
             'token_form' => $tokenForm,
+            'ips' => $this->ips->all(),
+            'ip_form' => $ipForm,
+            'client_ip' => $request->getClientIp(),
             'host' => $host,
             'form' => $form,
             'htpasswd_path' => $this->htpasswd->path(),
@@ -93,6 +114,18 @@ final class UserController extends AbstractController
         $this->addFlash('success', 'Token removed.');
 
         return $this->redirectToRoute('app_users', ['_fragment' => 'tokens']);
+    }
+
+    #[Route('/ips/{id}/delete', name: 'app_ip_delete', requirements: ['id' => '[a-f0-9]+'], methods: ['POST'])]
+    public function deleteIp(string $id, Request $request): Response
+    {
+        if (!$this->isCsrfTokenValid('delete-ip-'.$id, (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+        $this->ips->remove($id);
+        $this->addFlash('success', 'Address removed from the allow list, nginx picks it up within a few seconds.');
+
+        return $this->redirectToRoute('app_users', ['_fragment' => 'ips']);
     }
 
     #[Route('/{username}/delete', name: 'app_user_delete', methods: ['POST'])]

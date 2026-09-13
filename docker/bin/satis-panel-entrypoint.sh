@@ -84,6 +84,24 @@ php -r '
 # ---------------------------------------------------------------- htpasswd / nginx
 touch "$SATIS_HTPASSWD_FILE"
 mkdir -p /etc/nginx/snippets /etc/nginx/conf.d
+
+# IP allow list (managed in the UI, "allow" rules for nginx). Must exist for the include.
+IP_ALLOW_FILE="$CONFIG_DIR/ip-allow-list.conf"
+touch "$IP_ALLOW_FILE"
+
+# Client addresses behind the proxy: trust X-Forwarded-For from TRUSTED_PROXIES
+# (same list Symfony uses), so the allow list and logs see the real client.
+{
+    echo 'real_ip_header X-Forwarded-For;'
+    echo 'real_ip_recursive on;'
+    for proxy in $(echo "${TRUSTED_PROXIES:-}" | tr ',' ' '); do
+        case "$proxy" in
+            private_ranges) printf 'set_real_ip_from %s;\n' 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 127.0.0.0/8 fc00::/7 ::1 ;;
+            REMOTE_ADDR|'') ;;
+            *) echo "set_real_ip_from $proxy;" ;;
+        esac
+    done
+} > /etc/nginx/snippets/real-ip.conf
 case "$(echo "${SATIS_AUTH_DISABLED:-0}" | tr 'A-Z' 'a-z')" in
     1|true|yes|on)
         log "WARNING: SATIS_AUTH_DISABLED is set, package files are served without authentication"
@@ -91,7 +109,9 @@ case "$(echo "${SATIS_AUTH_DISABLED:-0}" | tr 'A-Z' 'a-z')" in
         ;;
     *)
         # Composer users (basic auth) or a logged-in admin session (auth_request) may pass.
-        printf 'satisfy any;\nauth_basic "Satis";\nauth_basic_user_file %s;\nauth_request /_auth/session;\n' "$SATIS_HTPASSWD_FILE" > /etc/nginx/snippets/satis-auth.conf
+        # Composer users (basic auth), a logged-in admin session (auth_request) or an
+        # address on the allow list may pass.
+        printf 'satisfy any;\nauth_basic "Satis";\nauth_basic_user_file %s;\nauth_request /_auth/session;\ninclude %s;\n' "$SATIS_HTPASSWD_FILE" "$IP_ALLOW_FILE" > /etc/nginx/snippets/satis-auth.conf
         ;;
 esac
 envsubst '${SATIS_OUTPUT_DIR}' < /etc/nginx/templates/site.conf.template > /etc/nginx/conf.d/satis-panel.conf

@@ -14,11 +14,13 @@ proxy labels are needed.
 * Repositories: add, edit and remove the entries of `satis.json`.
 * Configuration: name, homepage, require options, stability and the full
   **archive** block (dist mirroring).
-* Composer access: users (HTTP basic auth) and access tokens (`Authorization: Bearer`)
-  for `packages.json`, metadata and dist files. Users are stored as bcrypt hashes in an
-  htpasswd file that nginx reads on every request, tokens in `tokens.json`; the plain
-  values are kept in the config volume (mode 600) so they can be shown and copied in
-  the UI together with the matching `composer config` command.
+* Composer access: users (HTTP basic auth), access tokens (`Authorization: Bearer`)
+  and an IP allow list for `packages.json`, metadata and dist files. Users are stored
+  as bcrypt hashes in an htpasswd file that nginx reads on every request, tokens in
+  `tokens.json`; the plain values are kept in the config volume (mode 600) so they can
+  be shown and copied in the UI together with the matching `composer config` command.
+  Addresses on the allow list (single IPs or CIDR ranges, e.g. an office network or
+  fixed CI runners) get the files without credentials.
 * Source access: generate or import an SSH deploy key, show the public key to register
   at Bitbucket/GitHub/GitLab, manage `known_hosts` for self-hosted servers, and keep
   Composer credentials for HTTPS sources (GitHub/GitLab tokens, Bitbucket OAuth,
@@ -130,7 +132,7 @@ Rarely needed, supported by the image but not listed in `docker-compose.yaml`:
 
 | Volume | Path | Content |
 |---|---|---|
-| `satis-panel-config` | `/data/config` | `satis.json`, `htpasswd`, `composer-users.json`, `tokens.json`, `webhooks.json`, optional `auth.json`, generated secrets |
+| `satis-panel-config` | `/data/config` | `satis.json`, `htpasswd`, `composer-users.json`, `tokens.json`, `ip-allow-list.json`/`.conf`, `webhooks.json`, optional `auth.json`, generated secrets |
 | `satis-panel-output` | `/data/output` | Satis build output (`packages.json`, `p2/`, `include/`, `dist/`, `index.html`) |
 | `satis-panel-var` | `/var/www/html/var` | Sessions, logs, build state and log |
 | `satis-panel-composer` | `/var/www/.composer` | Composer home and cache |
@@ -153,8 +155,12 @@ for the Satis default.
 
 nginx serves the build output (`/`, `/packages.json`, `/p/`, `/p2/`, `/include/`,
 `/dist/`) straight from the output volume. Access is granted with basic auth (Composer
-users) or, via `auth_request`, with a logged-in admin session, so the admin can browse
-the package index without a Composer user. Everything else goes to the
+users), via `auth_request` with a bearer token or a logged-in admin session (so the
+admin can browse the package index without a Composer user), or by client address
+(`allow` rules from the IP allow list). The client address is taken from
+`X-Forwarded-For` when the request comes from one of the `TRUSTED_PROXIES`, the same
+list Symfony uses. Changes to the allow list are written to `ip-allow-list.conf` in
+the config volume and nginx is reloaded within a few seconds. Everything else goes to the
 Symfony app: `/login`, `/admin/...` (session login) and `/webhook/<secret>` (no auth
 besides the secret).
 

@@ -3,6 +3,7 @@ server {
     listen 80 default_server;
     server_name _;
     server_tokens off;
+    include /etc/nginx/snippets/real-ip.conf;
 
     root /var/www/html/public;
     index index.php;

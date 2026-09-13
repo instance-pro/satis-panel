@@ -14,7 +14,29 @@ if [ -n "$REDIS_URL" ]; then
     WORKER_PID=$!
 fi
 
+# Reload nginx when the IP allow list changes (written by the app as www-data,
+# which cannot signal nginx itself).
+IP_ALLOW_FILE="$(dirname "$SATIS_HTPASSWD_FILE")/ip-allow-list.conf"
+(
+    last=$(stat -c "%i %Y %s" "$IP_ALLOW_FILE" 2>/dev/null || echo 0)
+    while true; do
+        sleep 2
+        now=$(stat -c "%i %Y %s" "$IP_ALLOW_FILE" 2>/dev/null || echo 0)
+        if [ "$now" != "$last" ]; then
+            last=$now
+            if nginx -t -q 2>/dev/null; then
+                nginx -s reload && echo "satis-panel-serve: IP allow list changed, nginx reloaded"
+            else
+                echo "satis-panel-serve: WARNING: nginx configuration invalid after allow list change, not reloaded"
+                nginx -t 2>&1 | head -3
+            fi
+        fi
+    done
+) &
+WATCH_PID=$!
+
 shutdown() {
+    kill -TERM "$WATCH_PID" 2>/dev/null || true
     if [ -n "$WORKER_PID" ]; then
         pkill -TERM -P "$WORKER_PID" 2>/dev/null || true
         kill -TERM "$WORKER_PID" 2>/dev/null || true
